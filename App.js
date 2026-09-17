@@ -564,9 +564,63 @@ function WalletScreen({ market, paymentChannelId, selectPaymentChannel, onBack }
   );
 }
 
+const SUPPORT_EMAIL = 'harolddj256@gmail.com';
+
+const TERMS_TEXT = `By using VOOM you agree to arrange rides between riders and independent drivers on our platform. Fares are estimates based on distance and time and may change if the route changes. Cash payments are made directly to your driver; card and mobile-money payments are processed securely by Chapa, our payment partner. Either party may cancel a trip before pickup. Please treat drivers and riders with respect — abusive behavior can result in account suspension. VOOM is provided "as is" without warranties of any kind, and we are not liable for the conduct of drivers or riders. These terms may be updated as the service grows.`;
+const PRIVACY_TEXT = `We collect the information needed to run VOOM: your name, email or phone number, trip history, and location data while you're using the app. Payment details are handled by Chapa and are never stored on our servers. We use your data only to provide and improve the service — to match you with drivers, calculate fares, and generate receipts. We don't sell your personal data. You can request account deletion at any time by contacting support.`;
+
+function SafetyScreen({ onBack }) {
+  return (
+    <View style={styles.page}>
+      <ScreenHeader title="Safety center" onBack={onBack} />
+      <ScrollView>
+        <Text style={styles.sectionLabel}>Before you ride</Text>
+        <Text style={styles.muted}>Check that your driver's name, photo, and plate match what's shown in the app before getting in.</Text>
+        <Text style={[styles.sectionLabel,{marginTop:16}]}>During your ride</Text>
+        <Text style={styles.muted}>Use "Share details" on the trip screen to send your live pickup and destination to a friend or family member.</Text>
+        <Text style={[styles.sectionLabel,{marginTop:16}]}>In an emergency</Text>
+        <Text style={styles.muted}>VOOM does not dispatch emergency services or monitor trips in real time. If you're ever in danger, use your phone's built-in Emergency SOS feature or call local emergency services directly.</Text>
+      </ScrollView>
+    </View>
+  );
+}
+
+function LanguageScreen({ onBack }) {
+  return (
+    <View style={styles.page}>
+      <ScreenHeader title="Language" onBack={onBack} />
+      <View style={[styles.marketRow, styles.marketSelected]}>
+        <View style={{ flex: 1 }}><Text style={styles.paymentTitle}>English</Text></View>
+        <Ionicons name="checkmark-circle" size={22} color={C.darkGreen} />
+      </View>
+      <View style={[styles.marketRow,{opacity:0.5}]}>
+        <View style={{ flex: 1 }}><Text style={styles.paymentTitle}>Amharic (አማርኛ)</Text><Text style={styles.mutedSmall}>Translation in progress</Text></View>
+      </View>
+    </View>
+  );
+}
+
+function LegalScreen({ onBack }) {
+  return (
+    <View style={styles.page}>
+      <ScreenHeader title="Legal" onBack={onBack} />
+      <ScrollView>
+        <Text style={styles.sectionLabel}>Terms of Service</Text>
+        <Text style={styles.muted}>{TERMS_TEXT}</Text>
+        <Text style={[styles.sectionLabel,{marginTop:16}]}>Privacy Policy</Text>
+        <Text style={styles.muted}>{PRIVACY_TEXT}</Text>
+      </ScrollView>
+    </View>
+  );
+}
+
 function AccountScreen({ onBack }) {
   const { user, logout } = useSession();
+  const [view, setView] = useState('root');
   const confirmLogout = () => Alert.alert('Log out?','',[{text:'Cancel',style:'cancel'},{text:'Log out',style:'destructive',onPress:logout}]);
+  if (view === 'safety') return <SafetyScreen onBack={() => setView('root')} />;
+  if (view === 'language') return <LanguageScreen onBack={() => setView('root')} />;
+  if (view === 'legal') return <LegalScreen onBack={() => setView('root')} />;
   return (
     <View style={styles.page}>
       <ScreenHeader title="Account" onBack={onBack} />
@@ -574,11 +628,11 @@ function AccountScreen({ onBack }) {
         <View style={styles.profileAvatar}><Ionicons name="person" size={35} /></View>
         <View><Text style={styles.sheetTitle}>{user.name}</Text><Text style={styles.muted}>{user.email || user.phone} • {user.role==='DRIVER'?'Driver':'Rider'}</Text></View>
       </View>
-      <AccountRow icon="shield-checkmark" title="Safety center" />
-      <AccountRow icon="notifications" title="Notifications" />
-      <AccountRow icon="language" title="Language" subtitle="English • Amharic translation pending" />
-      <AccountRow icon="help-circle" title="Help & support" />
-      <AccountRow icon="document-text" title="Legal" />
+      <AccountRow icon="shield-checkmark" title="Safety center" onPress={() => setView('safety')} />
+      <AccountRow icon="notifications" title="Notifications" subtitle="Manage in your phone's settings" onPress={() => Linking.openSettings().catch(() => {})} />
+      <AccountRow icon="language" title="Language" subtitle="English" onPress={() => setView('language')} />
+      <AccountRow icon="help-circle" title="Help & support" subtitle={SUPPORT_EMAIL} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('VOOM support')}`).catch(() => Alert.alert('No email app found', `Email us at ${SUPPORT_EMAIL}`))} />
+      <AccountRow icon="document-text" title="Legal" onPress={() => setView('legal')} />
       <TouchableOpacity style={styles.accountRow} onPress={confirmLogout}>
         <View style={styles.accountIcon}><Ionicons name="log-out-outline" size={20} /></View>
         <Text style={styles.paymentTitle}>Log out</Text>
@@ -641,9 +695,9 @@ function PaymentChannelButton({ channel, selected, onSelect }) {
   );
 }
 
-function AccountRow({ icon, title, subtitle }) {
+function AccountRow({ icon, title, subtitle, onPress }) {
   return (
-    <TouchableOpacity style={styles.accountRow} onPress={() => Alert.alert(title, title === "Safety center" ? "VOOM does not provide emergency response yet. Use your phone’s Emergency SOS in a real emergency." : "This feature isn't available yet.")}>
+    <TouchableOpacity style={styles.accountRow} onPress={onPress}>
       <View style={styles.accountIcon}><Ionicons name={icon} size={20} /></View>
       <View style={{ flex: 1 }}><Text style={styles.paymentTitle}>{title}</Text>{subtitle && <Text style={styles.mutedSmall}>{subtitle}</Text>}</View>
       <Ionicons name="chevron-forward" size={18} color={C.muted} />
