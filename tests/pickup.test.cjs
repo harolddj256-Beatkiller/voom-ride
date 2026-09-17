@@ -4,6 +4,47 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');const vm=require('node:vm');
 const {createRequire}=require('node:module');const {MARKETS}=require('../src/markets.cjs');
+// English copy for the pickup status strings, mirrored from src/i18n.js so assertions
+// below stay meaningful; usePickup calls the real useI18n() hook in the app, which this
+// harness (like its other native-module mocks) stands in for rather than importing.
+const PICKUP_STRINGS={
+  defaultStatus:'Default pickup — use GPS or move the pin.',
+  deviceLocationSelected:'Device location selected. Confirm the exact pin.',
+  manualStatus:'Manual pickup — confirm a safe place to stop.',
+  pinnedPickupLabel:'Pinned pickup',
+  findingLocation:'Finding your location…',
+  permissionOff:'Location permission is off. You can still choose the pickup pin.',
+  locationAccessOffTitle:'Location access is off',
+  locationAccessOffBody:'Allow VOOM to use location in Settings, or choose a pickup manually.',
+  useMapPin:'Use map pin',
+  settings:'Settings',
+  locationServicesOff:'Device location is switched off. Use the map pin or enable Location Services.',
+  gpsTimeout:'GPS took too long.',
+  noRecentLocation:'No recent location was available.',
+  gpsUnavailable:'GPS is unavailable. Try again outdoors or choose a map pin.',
+  recentDeviceLocation:'Recent device location',
+  deviceLocation:'Device location',
+  outsideServiceArea:'Your device is outside the {city} service area. No pickup was changed.',
+  anotherCityTitle:'Your location is in another service city',
+  anotherCityBody:'Switch to {city} and use this pickup?',
+  keepThisCity:'Keep this city',
+  useCity:'Use {city}',
+  recentGpsFix:'Recent GPS fix (under 1 minute old)',
+  deviceLocationCaptured:'Device location captured',
+  locationCaptured:'{source}{accuracy} Confirm the pin.',
+  accuracySuffix:' • ±{m} m',
+  couldNotGetLocation:'Could not get location. Use the map pin.',
+  addressPermissionNeeded:'Address lookup needs location permission on this device. Coordinates remain usable.',
+  addressLookupTimeout:'Address lookup timed out. Coordinates remain usable.',
+  noStreetAddress:'No street address was found. Your exact pin is still selected.',
+  deviceAddressLookup:'Device address lookup — check it against the pin before confirming.',
+};
+function pickupT(key,vars) {
+  const short=key.replace(/^pickup\./,'');
+  let str=PICKUP_STRINGS[short] ?? key;
+  if (vars) for (const k of Object.keys(vars)) str=str.replace(`{${k}}`,vars[k]);
+  return str;
+}
 function mount(location={}) {
   const file=path.resolve(__dirname,'../src/usePickup.js');
   const source=fs.readFileSync(file,'utf8').replace(/^import .*;\n/gm,'').replace(/export function /g,'function ');
@@ -12,6 +53,7 @@ function mount(location={}) {
   const context={ module:{exports:{}},require:createRequire(file),setTimeout,clearTimeout,
     useState(initial){const index=stateIndex++;state[index]=initial;return [initial,value=>{state[index]=typeof value==='function'?value(state[index]):value;}];},
     useRef(value){return {current:value};},useEffect(effect){cleanup.push(effect());},
+    useI18n(){return {t:pickupT,lang:'en',setLang(){}};},
     Alert:{alert:(...args)=>alerts.push(args)},Linking:{openSettings:async()=>{}},
     Location:{Accuracy:{High:4},requestForegroundPermissionsAsync:async()=>({status:'granted',canAskAgain:true}),
       hasServicesEnabledAsync:async()=>true,getCurrentPositionAsync:async()=>({coords:{latitude:9.02,longitude:38.76,accuracy:12}}),

@@ -37,11 +37,14 @@ router.post('/register', async (req, res, next) => {
     const email = requiredString(req.body?.email, 'email', { max: 160 }).toLowerCase();
     const password = requiredString(req.body?.password, 'password', { min: 8, max: 100 });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400, 'Invalid email.');
+    const { phone } = await verifyOtp(req.body?.phone, req.body?.code);
     const role = validRole(req.body?.role);
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) throw new HttpError(409, 'An account with this email already exists.');
+    const existingEmail = await prisma.user.findUnique({ where: { email } });
+    if (existingEmail) throw new HttpError(409, 'An account with this email already exists.');
+    const existingPhone = await prisma.user.findUnique({ where: { phone } });
+    if (existingPhone) throw new HttpError(409, 'An account with this phone number already exists.');
     const user = await prisma.user.create({
-      data: { name, email, passwordHash: await hashPassword(password), role, ...vehicleFields(req.body, role) },
+      data: { name, email, phone, phoneVerifiedAt: new Date(), passwordHash: await hashPassword(password), role, ...vehicleFields(req.body, role) },
     });
     res.status(201).json({ token: signToken(user), user: publicUser(user) });
   } catch (err) { next(err); }
@@ -69,14 +72,9 @@ router.post('/otp/send', async (req, res, next) => {
 router.post('/otp/verify', async (req, res, next) => {
   try {
     const { phone } = await verifyOtp(req.body?.phone, req.body?.code);
-    const role = validRole(req.body?.role);
     let user = await prisma.user.findUnique({ where: { phone } });
-    if (!user) {
-      const name = typeof req.body?.name === 'string' && req.body.name.trim() ? req.body.name.trim().slice(0, 80) : 'VOOM user';
-      user = await prisma.user.create({ data: { name, phone, role, phoneVerifiedAt: new Date(), ...vehicleFields(req.body, role) } });
-    } else if (!user.phoneVerifiedAt) {
-      user = await prisma.user.update({ where: { id: user.id }, data: { phoneVerifiedAt: new Date() } });
-    }
+    if (!user) throw new HttpError(404, 'No account uses this phone number. Create an account with your email and phone first.');
+    if (!user.phoneVerifiedAt) user = await prisma.user.update({ where: { id: user.id }, data: { phoneVerifiedAt: new Date() } });
     res.json({ token: signToken(user), user: publicUser(user) });
   } catch (err) { next(err); }
 });

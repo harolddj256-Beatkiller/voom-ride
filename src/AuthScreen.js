@@ -6,6 +6,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { C } from './theme';
 import { useSession } from './session';
+import { useI18n } from './i18n';
 
 function Field({ label, ...props }) {
   return (
@@ -30,34 +31,51 @@ function Button({ children, onPress, disabled, secondary }) {
 }
 
 function RoleToggle({ role, setRole }) {
+  const { t } = useI18n();
   return (
     <View style={styles.roleRow}>
       {['RIDER', 'DRIVER'].map((r) => (
         <TouchableOpacity key={r} style={[styles.rolePill, role === r && styles.rolePillActive]} onPress={() => setRole(r)}>
-          <Text style={[styles.roleText, role === r && styles.roleTextActive]}>{r === 'RIDER' ? 'Ride' : 'Drive'}</Text>
+          <Text style={[styles.roleText, role === r && styles.roleTextActive]}>{r === 'RIDER' ? t('auth.roleRide') : t('auth.roleDrive')}</Text>
         </TouchableOpacity>
       ))}
     </View>
   );
 }
 
-function EmailAuth({ mode, role, vehicleModel, setVehicleModel, vehiclePlate, setVehiclePlate }) {
-  const { register, login } = useSession();
+// Signup always collects both a verified phone (via OTP) and an email + password,
+// so every VOOM account can be reached both ways.
+function SignupForm({ role, vehicleModel, setVehicleModel, vehiclePlate, setVehiclePlate }) {
+  const { t } = useI18n();
+  const { register, sendOtp } = useSession();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('+251');
+  const [code, setCode] = useState('');
+  const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const detailsValid = name.trim().length >= 2 && email.trim().length > 3 && password.length >= 8 && phone.trim().length >= 8;
+
+  async function requestCode() {
+    setBusy(true);
+    try {
+      await sendOtp(phone.trim());
+      setSent(true);
+    } catch (e) {
+      Alert.alert(t('auth.couldNotSendCode'), e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function submit() {
     setBusy(true);
     try {
-      if (mode === 'signup') {
-        await register({ name, email, password, role, vehicleModel, vehiclePlate });
-      } else {
-        await login({ email, password });
-      }
+      await register({ name, email, password, phone: phone.trim(), code: code.trim(), role, vehicleModel, vehiclePlate });
     } catch (e) {
-      Alert.alert(mode === 'signup' ? 'Could not create account' : 'Could not sign in', e.message);
+      Alert.alert(t('auth.couldNotCreateAccount'), e.message);
     } finally {
       setBusy(false);
     }
@@ -65,27 +83,71 @@ function EmailAuth({ mode, role, vehicleModel, setVehicleModel, vehiclePlate, se
 
   return (
     <View>
-      {mode === 'signup' && <Field label="Full name" value={name} onChangeText={setName} autoCapitalize="words" />}
-      <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
-      <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry />
-      {mode === 'signup' && role === 'DRIVER' && (
+      <Field label={t('auth.fullName')} value={name} onChangeText={setName} autoCapitalize="words" editable={!sent} />
+      <Field label={t('auth.emailLabel')} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" editable={!sent} />
+      <Field label={t('auth.password')} value={password} onChangeText={setPassword} secureTextEntry editable={!sent} />
+      {role === 'DRIVER' && (
         <>
-          <Field label="Vehicle model" value={vehicleModel} onChangeText={setVehicleModel} placeholder="e.g. Toyota Corolla" />
-          <Field label="Plate number" value={vehiclePlate} onChangeText={setVehiclePlate} autoCapitalize="characters" />
+          <Field label={t('auth.vehicleModel')} value={vehicleModel} onChangeText={setVehicleModel} placeholder={t('auth.vehicleModelPlaceholder')} editable={!sent} />
+          <Field label={t('auth.plateNumber')} value={vehiclePlate} onChangeText={setVehiclePlate} autoCapitalize="characters" editable={!sent} />
         </>
       )}
-      <Button disabled={busy || !email || !password || (mode === 'signup' && !name)} onPress={submit}>
-        {busy ? <ActivityIndicator color={C.paper} /> : mode === 'signup' ? 'Create account' : 'Sign in'}
+      <Field label={t('auth.phoneLabel')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={!sent} />
+      {!sent && <Text style={styles.hint}>{t('auth.verifyPhoneFirst')}</Text>}
+      {!sent && (
+        <Button disabled={busy || !detailsValid} onPress={requestCode}>
+          {busy ? <ActivityIndicator color={C.paper} /> : t('auth.sendCode')}
+        </Button>
+      )}
+      {sent && (
+        <>
+          <Field label={t('auth.codeLabel')} value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />
+          <Button disabled={busy || code.trim().length !== 6} onPress={submit}>
+            {busy ? <ActivityIndicator color={C.paper} /> : t('auth.createAccountButton')}
+          </Button>
+          <TouchableOpacity onPress={() => { setSent(false); setCode(''); }} style={{ marginTop: 10 }}>
+            <Text style={styles.link}>{t('auth.useDifferentNumber')}</Text>
+          </TouchableOpacity>
+        </>
+      )}
+    </View>
+  );
+}
+
+function EmailLogin() {
+  const { t } = useI18n();
+  const { login } = useSession();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    setBusy(true);
+    try {
+      await login({ email, password });
+    } catch (e) {
+      Alert.alert(t('auth.couldNotSignIn'), e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <View>
+      <Field label={t('auth.emailLabel')} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+      <Field label={t('auth.password')} value={password} onChangeText={setPassword} secureTextEntry />
+      <Button disabled={busy || !email || !password} onPress={submit}>
+        {busy ? <ActivityIndicator color={C.paper} /> : t('auth.signIn')}
       </Button>
     </View>
   );
 }
 
-function PhoneAuth({ mode, role, vehicleModel, vehiclePlate }) {
+function PhoneLogin() {
+  const { t } = useI18n();
   const { sendOtp, verifyOtp } = useSession();
   const [phone, setPhone] = useState('+251');
   const [code, setCode] = useState('');
-  const [name, setName] = useState('');
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -95,7 +157,7 @@ function PhoneAuth({ mode, role, vehicleModel, vehiclePlate }) {
       await sendOtp(phone.trim());
       setSent(true);
     } catch (e) {
-      Alert.alert('Could not send code', e.message);
+      Alert.alert(t('auth.couldNotSendCode'), e.message);
     } finally {
       setBusy(false);
     }
@@ -104,9 +166,9 @@ function PhoneAuth({ mode, role, vehicleModel, vehiclePlate }) {
   async function confirmCode() {
     setBusy(true);
     try {
-      await verifyOtp({ phone: phone.trim(), code: code.trim(), role, name, vehicleModel, vehiclePlate });
+      await verifyOtp({ phone: phone.trim(), code: code.trim() });
     } catch (e) {
-      Alert.alert('Could not verify code', e.message);
+      Alert.alert(t('auth.couldNotVerifyCode'), e.message);
     } finally {
       setBusy(false);
     }
@@ -114,21 +176,20 @@ function PhoneAuth({ mode, role, vehicleModel, vehiclePlate }) {
 
   return (
     <View>
-      <Field label="Phone number (E.164, e.g. +2519xxxxxxxx)" value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={!sent} />
-      {!sent && mode === 'signup' && <Field label="Full name" value={name} onChangeText={setName} autoCapitalize="words" />}
+      <Field label={t('auth.phoneLabel')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={!sent} />
       {!sent && (
         <Button disabled={busy || phone.trim().length < 8} onPress={requestCode}>
-          {busy ? <ActivityIndicator color={C.paper} /> : 'Send code'}
+          {busy ? <ActivityIndicator color={C.paper} /> : t('auth.sendCode')}
         </Button>
       )}
       {sent && (
         <>
-          <Field label="6-digit code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />
+          <Field label={t('auth.codeLabel')} value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />
           <Button disabled={busy || code.trim().length !== 6} onPress={confirmCode}>
-            {busy ? <ActivityIndicator color={C.paper} /> : 'Verify and continue'}
+            {busy ? <ActivityIndicator color={C.paper} /> : t('auth.verifyAndContinue')}
           </Button>
           <TouchableOpacity onPress={() => setSent(false)} style={{ marginTop: 10 }}>
-            <Text style={styles.link}>Use a different number</Text>
+            <Text style={styles.link}>{t('auth.useDifferentNumber')}</Text>
           </TouchableOpacity>
         </>
       )}
@@ -137,6 +198,7 @@ function PhoneAuth({ mode, role, vehicleModel, vehiclePlate }) {
 }
 
 export default function AuthScreen() {
+  const { t } = useI18n();
   const [mode, setMode] = useState('login');
   const [method, setMethod] = useState('email');
   const [role, setRole] = useState('RIDER');
@@ -149,21 +211,25 @@ export default function AuthScreen() {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <Text style={styles.logo}>VOOM</Text>
-          <Text style={styles.title}>{mode === 'signup' ? 'Create your account' : 'Welcome back'}</Text>
+          <Text style={styles.title}>{mode === 'signup' ? t('auth.createAccount') : t('auth.welcomeBack')}</Text>
           {mode === 'signup' && <RoleToggle role={role} setRole={setRole} />}
-          <View style={styles.methodRow}>
-            <TouchableOpacity style={[styles.methodPill, method === 'email' && styles.methodPillActive]} onPress={() => setMethod('email')}>
-              <Text style={[styles.methodText, method === 'email' && styles.methodTextActive]}>Email</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.methodPill, method === 'phone' && styles.methodPillActive]} onPress={() => setMethod('phone')}>
-              <Text style={[styles.methodText, method === 'phone' && styles.methodTextActive]}>Phone</Text>
-            </TouchableOpacity>
-          </View>
-          {method === 'email'
-            ? <EmailAuth mode={mode} role={role} vehicleModel={vehicleModel} setVehicleModel={setVehicleModel} vehiclePlate={vehiclePlate} setVehiclePlate={setVehiclePlate} />
-            : <PhoneAuth mode={mode} role={role} vehicleModel={vehicleModel} vehiclePlate={vehiclePlate} />}
+          {mode === 'signup' ? (
+            <SignupForm role={role} vehicleModel={vehicleModel} setVehicleModel={setVehicleModel} vehiclePlate={vehiclePlate} setVehiclePlate={setVehiclePlate} />
+          ) : (
+            <>
+              <View style={styles.methodRow}>
+                <TouchableOpacity style={[styles.methodPill, method === 'email' && styles.methodPillActive]} onPress={() => setMethod('email')}>
+                  <Text style={[styles.methodText, method === 'email' && styles.methodTextActive]}>{t('auth.email')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.methodPill, method === 'phone' && styles.methodPillActive]} onPress={() => setMethod('phone')}>
+                  <Text style={[styles.methodText, method === 'phone' && styles.methodTextActive]}>{t('auth.phone')}</Text>
+                </TouchableOpacity>
+              </View>
+              {method === 'email' ? <EmailLogin /> : <PhoneLogin />}
+            </>
+          )}
           <TouchableOpacity onPress={() => setMode(mode === 'signup' ? 'login' : 'signup')} style={{ marginTop: 18 }}>
-            <Text style={styles.link}>{mode === 'signup' ? 'Already have an account? Sign in' : "New to VOOM? Create an account"}</Text>
+            <Text style={styles.link}>{mode === 'signup' ? t('auth.alreadyHaveAccount') : t('auth.newToVoom')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -190,6 +256,7 @@ const styles = StyleSheet.create({
   field: { marginBottom: 12 },
   label: { fontSize: 12, fontWeight: '800', color: C.muted, marginBottom: 6 },
   input: { height: 50, borderRadius: 12, backgroundColor: C.soft, paddingHorizontal: 14, fontSize: 15, fontWeight: '600', color: C.ink },
+  hint: { fontSize: 12, color: C.muted, marginBottom: 12, lineHeight: 17 },
   button: { marginTop: 8, backgroundColor: C.ink, borderRadius: 14, minHeight: 52, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
   buttonSecondary: { backgroundColor: C.paper, borderWidth: 1.5, borderColor: C.line },
   buttonText: { color: C.paper, fontSize: 16, fontWeight: '900' },
