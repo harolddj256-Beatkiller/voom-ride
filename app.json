@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "VOOM",
+    "slug": "voom-ride",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "voom",
+    "plugins": [
+      "expo-asset"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.voom.ride",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "VOOM uses your location when you tap Use GPS to set your pickup point."
+      }
+    },
+    "android": {
+      "package": "com.voom.ride",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "adaptiveIcon": {
+        "backgroundColor": "#111111"
+      }
+    }
+  }
+}

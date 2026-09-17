@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  RIDER
+  DRIVER
+  ADMIN
+}
+
+enum TripStatus {
+  REQUESTED
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CHAPA
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model User {
+  id              String    @id @default(cuid())
+  name            String
+  email           String?   @unique
+  phone           String?   @unique
+  passwordHash    String?
+  role            Role      @default(RIDER)
+  phoneVerifiedAt DateTime?
+  vehicleModel    String?
+  vehiclePlate    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tripsAsRider  Trip[] @relation("RiderTrips")
+  tripsAsDriver Trip[] @relation("DriverTrips")
+}
+
+model OtpCode {
+  id         String    @id @default(cuid())
+  phone      String
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  @@index([phone])
+}
+
+model Trip {
+  id               String     @id @default(cuid())
+  riderId          String
+  rider            User       @relation("RiderTrips", fields: [riderId], references: [id])
+  driverId         String?
+  driver           User?      @relation("DriverTrips", fields: [driverId], references: [id])
+  market           String
+  rideType         String
+  pickupLat        Float
+  pickupLng        Float
+  pickupLabel      String
+  destLat          Float
+  destLng          Float
+  destLabel        String
+  distanceMeters   Float
+  durationSeconds  Int?
+  currency         String
+  fareAmount       Int
+  paymentMethod    PaymentMethod @default(CASH)
+  status           TripStatus @default(REQUESTED)
+  requestedAt      DateTime   @default(now())
+  acceptedAt       DateTime?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  cancelledAt      DateTime?
+
+  payments Payment[]
+  receipt  Receipt?
+
+  @@index([riderId])
+  @@index([driverId])
+  @@index([status])
+}
+
+model Payment {
+  id         String        @id @default(cuid())
+  tripId     String
+  trip       Trip          @relation(fields: [tripId], references: [id])
+  provider   PaymentMethod
+  txRef      String        @unique
+  providerRef String?
+  amount     Int
+  currency   String
+  status     PaymentStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  receipt Receipt?
+
+  @@index([tripId])
+}
+
+model Receipt {
+  id        String   @id @default(cuid())
+  number    String   @unique
+  tripId    String   @unique
+  trip      Trip     @relation(fields: [tripId], references: [id])
+  paymentId String?  @unique
+  payment   Payment? @relation(fields: [paymentId], references: [id])
+  amount    Int
+  currency  String
+  issuedAt  DateTime @default(now())
+  riderName String
+  driverName String?
+}

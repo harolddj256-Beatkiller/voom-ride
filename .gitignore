@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+dist/
+.voom-npm-cache/
+.voom-deps-installed
+.voom-install.log
+.env
+.env.*
+!.env.example
+server/.env
+*.log
+.DS_Store
+android/
+ios/

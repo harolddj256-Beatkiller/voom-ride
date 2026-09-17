@@ -1,0 +1,224 @@
+
+> voom-ride-app@2.0.0 test
+> node --test tests/*.test.cjs
+
+TAP version 13
+# Subtest: coordinate validation rejects non-finite, strings and out-of-range input
+ok 1 - coordinate validation rejects non-finite, strings and out-of-range input
+  ---
+  duration_ms: 1.309124
+  type: 'test'
+  ...
+# Subtest: distance is symmetric, zero on the same pin and finite at antipodes
+ok 2 - distance is symmetric, zero on the same pin and finite at antipodes
+  ---
+  duration_ms: 0.350405
+  type: 'test'
+  ...
+# Subtest: the two service cities cannot be mixed into one ride
+ok 3 - the two service cities cannot be mixed into one ride
+  ---
+  duration_ms: 0.271832
+  type: 'test'
+  ...
+# Subtest: near-identical origin and destination are blocked
+ok 4 - near-identical origin and destination are blocked
+  ---
+  duration_ms: 1.273583
+  type: 'test'
+  ...
+# Subtest: manual pin outside the area is rejected
+ok 5 - manual pin outside the area is rejected
+  ---
+  duration_ms: 0.145434
+  type: 'test'
+  ...
+# Subtest: no-key fallback has no fake road geometry or ETA
+ok 6 - no-key fallback has no fake road geometry or ETA
+  ---
+  duration_ms: 1.196112
+  type: 'test'
+  ...
+# Subtest: rider and driver use the identical fare function and minimum/rounding
+ok 7 - rider and driver use the identical fare function and minimum/rounding
+  ---
+  duration_ms: 0.348023
+  type: 'test'
+  ...
+# Subtest: a longer supplied road distance changes price instead of using the aerial shortcut
+ok 8 - a longer supplied road distance changes price instead of using the aerial shortcut
+  ---
+  duration_ms: 0.138093
+  type: 'test'
+  ...
+# Subtest: invalid pricing input is rejected
+ok 9 - invalid pricing input is rejected
+  ---
+  duration_ms: 0.589681
+  type: 'test'
+  ...
+# Subtest: Google Maps external URL contains the exact edited endpoints, no API key
+ok 10 - Google Maps external URL contains the exact edited endpoints, no API key
+  ---
+  duration_ms: 0.564338
+  type: 'test'
+  ...
+# Subtest: route keys distinguish new pickup, city, and travel mode
+ok 11 - route keys distinguish new pickup, city, and travel mode
+  ---
+  duration_ms: 0.241979
+  type: 'test'
+  ...
+# Subtest: standard encoded polyline decodes precisely
+ok 12 - standard encoded polyline decodes precisely
+  ---
+  duration_ms: 0.288812
+  type: 'test'
+  ...
+# Subtest: truncated and invalid polyline are rejected
+ok 13 - truncated and invalid polyline are rejected
+  ---
+  duration_ms: 0.161124
+  type: 'test'
+  ...
+# Subtest: route normalization rejects a polyline for an unrelated city
+ok 14 - route normalization rejects a polyline for an unrelated city
+  ---
+  duration_ms: 0.261627
+  type: 'test'
+  ...
+# Subtest: market seed destinations are explicitly identified as suggestions, not verified addresses
+ok 15 - market seed destinations are explicitly identified as suggestions, not verified addresses
+  ---
+  duration_ms: 0.105847
+  type: 'test'
+  ...
+# Subtest: denied GPS permission leaves the default pickup and explains manual fallback
+ok 16 - denied GPS permission leaves the default pickup and explains manual fallback
+  ---
+  duration_ms: 2.998231
+  type: 'test'
+  ...
+# Subtest: GPS success updates actual pickup coordinates and measured accuracy
+ok 17 - GPS success updates actual pickup coordinates and measured accuracy
+  ---
+  duration_ms: 2.537599
+  type: 'test'
+  ...
+# Subtest: late GPS response cannot overwrite a manually chosen pickup
+ok 18 - late GPS response cannot overwrite a manually chosen pickup
+  ---
+  duration_ms: 5.56974
+  type: 'test'
+  ...
+# Subtest: a GPS fix in Kampala asks before changing Addis market
+ok 19 - a GPS fix in Kampala asks before changing Addis market
+  ---
+  duration_ms: 1.124327
+  type: 'test'
+  ...
+# Subtest: city reset invalidates an in-flight GPS result
+ok 20 - city reset invalidates an in-flight GPS result
+  ---
+  duration_ms: 1.579141
+  type: 'test'
+  ...
+# Subtest: disabled device location reports a useful fallback instead of claiming live pickup
+ok 21 - disabled device location reports a useful fallback instead of claiming live pickup
+  ---
+  duration_ms: 1.006707
+  type: 'test'
+  ...
+# Subtest: missing server key fails closed, with no upstream request
+ok 22 - missing server key fails closed, with no upstream request
+  ---
+  duration_ms: 63.422265
+  type: 'test'
+  ...
+# Subtest: unauthorized requests cannot spend Google quota
+ok 23 - unauthorized requests cannot spend Google quota
+  ---
+  duration_ms: 6.955543
+  type: 'test'
+  ...
+# Subtest: missing development token fails closed
+ok 24 - missing development token fails closed
+  ---
+  duration_ms: 3.955583
+  type: 'test'
+  ...
+# Subtest: health does not expose credentials
+ok 25 - health does not expose credentials
+  ---
+  duration_ms: 6.004895
+  type: 'test'
+  ...
+# Subtest: unsupported market fails before network
+ok 26 - unsupported market fails before network
+  ---
+  duration_ms: 6.57813
+  type: 'test'
+  ...
+# Subtest: cross-city route fails before network
+ok 27 - cross-city route fails before network
+  ---
+  duration_ms: 3.805325
+  type: 'test'
+  ...
+# Subtest: unsupported transport mode is rejected
+ok 28 - unsupported transport mode is rejected
+  ---
+  duration_ms: 3.374663
+  type: 'test'
+  ...
+# Subtest: autocomplete restricts country and uses the passed session token
+ok 29 - autocomplete restricts country and uses the passed session token
+  ---
+  duration_ms: 5.073155
+  type: 'test'
+  ...
+# Subtest: place selection returns coordinates rather than a label alone
+ok 30 - place selection returns coordinates rather than a label alone
+  ---
+  duration_ms: 7.315786
+  type: 'test'
+  ...
+# Subtest: place ID cannot inject an endpoint or query string
+ok 31 - place ID cannot inject an endpoint or query string
+  ---
+  duration_ms: 4.881471
+  type: 'test'
+  ...
+# Subtest: Google road distance and duration are returned from response fields
+ok 32 - Google road distance and duration are returned from response fields
+  ---
+  duration_ms: 3.136362
+  type: 'test'
+  ...
+# Subtest: Google quota failure gives a useful, sanitized error
+ok 33 - Google quota failure gives a useful, sanitized error
+  ---
+  duration_ms: 3.01614
+  type: 'test'
+  ...
+# Subtest: rate limiting stops excess upstream calls
+ok 34 - rate limiting stops excess upstream calls
+  ---
+  duration_ms: 59.343452
+  type: 'test'
+  ...
+# Subtest: unknown path does not proxy arbitrary URLs
+ok 35 - unknown path does not proxy arbitrary URLs
+  ---
+  duration_ms: 2.343395
+  type: 'test'
+  ...
+1..35
+# tests 35
+# suites 0
+# pass 35
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 275.425941
