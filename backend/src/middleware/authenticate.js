@@ -7,8 +7,11 @@ function authenticate() {
   return async (req, res, next) => {
     try {
       const header = req.headers.authorization || '';
-      const [scheme, token] = header.split(' ');
-      if (scheme !== 'Bearer' || !token) throw new HttpError(401, 'Missing or invalid Authorization header.');
+      const [scheme, headerToken] = header.split(' ');
+      // <img> tags can't set an Authorization header, so the admin photo viewer
+      // passes the token as a query param instead; every other caller uses the header.
+      const token = scheme === 'Bearer' ? headerToken : (typeof req.query?.token === 'string' ? req.query.token : null);
+      if (!token) throw new HttpError(401, 'Missing or invalid Authorization header.');
       let payload;
       try {
         payload = verifyToken(token);

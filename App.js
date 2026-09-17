@@ -20,6 +20,8 @@ import { usePickup, withTimeout } from './src/usePickup';
 import { useTripRoute } from './src/useTripRoute';
 import { useTripPolling } from './src/useTripPolling';
 import { usePaymentChannel } from './src/usePaymentChannel';
+import { useEmergencyContact } from './src/useEmergencyContact';
+const { whatsappShareURL } = require('./src/whatsapp.cjs');
 import { MAPS_CONNECTED, MAPS_SETUP_NOTE, mapsRequest, newSessionToken } from './src/mapsClient';
 import { api, API_BASE_URL } from './src/api';
 import { SessionProvider, useSession } from './src/session';
@@ -362,6 +364,7 @@ function DriverCard({ driver }) {
 }
 function TripScreen({market,initialTrip,onDone,onExit}) {
   const { t, lang } = useI18n();
+  const [emergencyContact] = useEmergencyContact();
   const { trip, refresh } = useTripPolling(initialTrip.id, initialTrip);
   const current = trip || initialTrip;
   const [payBusy,setPayBusy]=useState(false);
@@ -377,7 +380,23 @@ function TripScreen({market,initialTrip,onDone,onExit}) {
     {text:t('trip.cancelRide'),style:'destructive',onPress: async () => {
       try {await api.cancelTrip(current.id);onExit();} catch(e){Alert.alert(t('trip.couldNotCancel'),e.message);}
     }}]);
-  const share=() => Share.share({message:`VOOM ride\nPickup: ${current.pickup.label} (${pointLabel(current.pickup)})\nDestination: ${current.destination.label} (${pointLabel(current.destination)})`}).catch(() => {});
+  function tripShareText() {
+    const lines=[`VOOM ${t('trip.pickup')==='Pickup'?'ride':t('trip.pickup')}`,
+      `${t('trip.pickup')}: ${current.pickup.label} (${pointLabel(current.pickup)})`,
+      `${t('trip.destination')}: ${current.destination.label} (${pointLabel(current.destination)})`];
+    if (current.driver?.name) lines.push(t('trip.shareDriverLine',{name:current.driver.name,plate:current.driver.vehiclePlate || '—'}));
+    lines.push(t('trip.shareDirectionsLine',{url:googleDirectionsURL(current.pickup,current.destination)}));
+    return lines.join('\n');
+  }
+  const share=() => Share.share({message:tripShareText()}).catch(() => {});
+  function shareWhatsapp() {
+    if (!emergencyContact) {
+      Alert.alert(t('trip.noContactTitle'),t('trip.noContactBody'));
+      return;
+    }
+    Linking.openURL(whatsappShareURL(emergencyContact,tripShareText()))
+      .catch(() => Alert.alert(t('trip.couldNotOpenWhatsappTitle'),t('trip.couldNotOpenWhatsappBody')));
+  }
   async function payWithChapa() {
     setPayBusy(true);
     try {
@@ -400,12 +419,17 @@ function TripScreen({market,initialTrip,onDone,onExit}) {
         <TripInfo icon="location" title={current.pickup.label} subtitle={t('trip.pickup')}/>
         <TripInfo icon="flag" title={current.destination.label} subtitle={t('trip.destination')}/>
         <Text style={styles.muted}>{paymentMethodText(lang,current.paymentMethod)} • {formatMoney(current.fareAmount,current.currency)}</Text>
+        <View style={styles.safetyRow}>
+          <Safety icon="logo-whatsapp" text={t('trip.shareWhatsapp')} onPress={shareWhatsapp}/>
+          <Safety icon="share-social" text={t('trip.shareDetails')} onPress={share}/>
+        </View>
       </>}
       {current.status==='IN_PROGRESS' && <>
         <Text style={styles.sheetTitle}>{t('trip.inProgress')}</Text>
         <Text style={styles.muted}>{current.pickup.label} → {current.destination.label}</Text>
         <View style={styles.safetyRow}>
           <Safety icon="shield-checkmark" text={t('trip.safetyInfo')} onPress={() => Alert.alert(t('trip.emergencyTitle'),t('trip.emergencyBody'))}/>
+          <Safety icon="logo-whatsapp" text={t('trip.shareWhatsapp')} onPress={shareWhatsapp}/>
           <Safety icon="share-social" text={t('trip.shareDetails')} onPress={share}/>
           <Safety icon="navigate" text={t('trip.directions')} onPress={() => openDirections(current.pickup,current.destination,t)}/>
         </View>
@@ -618,6 +642,30 @@ function LanguageScreen({ onBack }) {
   );
 }
 
+function EmergencyContactScreen({ onBack }) {
+  const { t } = useI18n();
+  const [saved, setSaved] = useEmergencyContact();
+  const [draft, setDraft] = useState(saved);
+  return (
+    <View style={styles.page}>
+      <ScreenHeader title={t('emergencyContact.title')} onBack={onBack} />
+      <Text style={styles.muted}>{t('emergencyContact.description')}</Text>
+      <Field label={t('emergencyContact.label')} value={draft} onChangeText={setDraft} keyboardType="phone-pad" placeholder={t('emergencyContact.placeholder')} />
+      <AppButton disabled={!draft.trim()} onPress={() => { setSaved(draft.trim()); Alert.alert(t('emergencyContact.savedTitle'), t('emergencyContact.savedBody')); }}>{t('emergencyContact.save')}</AppButton>
+      {!!saved && <AppButton secondary onPress={() => { setSaved(''); setDraft(''); }}>{t('emergencyContact.remove')}</AppButton>}
+    </View>
+  );
+}
+
+function Field({ label, ...props }) {
+  return (
+    <View style={{ marginTop: 14, marginBottom: 6 }}>
+      <Text style={styles.mutedSmall}>{label}</Text>
+      <TextInput style={styles.fieldInput} placeholderTextColor={C.muted} {...props} />
+    </View>
+  );
+}
+
 function LegalScreen({ onBack }) {
   const { t, lang } = useI18n();
   return (
@@ -636,11 +684,13 @@ function LegalScreen({ onBack }) {
 function AccountScreen({ onBack }) {
   const { t, lang } = useI18n();
   const { user, logout } = useSession();
+  const [emergencyContact] = useEmergencyContact();
   const [view, setView] = useState('root');
   const confirmLogout = () => Alert.alert(t('account.logOutConfirm'),'',[{text:t('common.cancel'),style:'cancel'},{text:t('account.logOut'),style:'destructive',onPress:logout}]);
   if (view === 'safety') return <SafetyScreen onBack={() => setView('root')} />;
   if (view === 'language') return <LanguageScreen onBack={() => setView('root')} />;
   if (view === 'legal') return <LegalScreen onBack={() => setView('root')} />;
+  if (view === 'emergencyContact') return <EmergencyContactScreen onBack={() => setView('root')} />;
   return (
     <View style={styles.page}>
       <ScreenHeader title={t('account.title')} onBack={onBack} />
@@ -648,7 +698,18 @@ function AccountScreen({ onBack }) {
         <View style={styles.profileAvatar}><Ionicons name="person" size={35} /></View>
         <View><Text style={styles.sheetTitle}>{user.name}</Text><Text style={styles.muted}>{user.email || user.phone} • {user.role==='DRIVER'?t('account.driver'):t('account.rider')}</Text></View>
       </View>
+      {user.role==='DRIVER' && user.verificationStatus==='PENDING' && (
+        <View style={styles.infoNotice}><Ionicons name="time-outline" size={16} color={C.darkGreen} />
+          <View style={{flex:1}}><Text style={[styles.infoNoticeText,{fontWeight:'800'}]}>{t('account.verificationPending')}</Text><Text style={styles.infoNoticeText}>{t('account.verificationPendingBody')}</Text></View>
+        </View>
+      )}
+      {user.role==='DRIVER' && user.verificationStatus==='REJECTED' && (
+        <View style={[styles.infoNotice,{backgroundColor:'#FBE7E2'}]}><Ionicons name="alert-circle-outline" size={16} color="#9A3412" />
+          <View style={{flex:1}}><Text style={[styles.infoNoticeText,{fontWeight:'800',color:'#9A3412'}]}>{t('account.verificationRejected')}</Text><Text style={[styles.infoNoticeText,{color:'#9A3412'}]}>{t('account.verificationRejectedBody')}</Text></View>
+        </View>
+      )}
       <AccountRow icon="shield-checkmark" title={t('account.safetyCenter')} onPress={() => setView('safety')} />
+      <AccountRow icon="logo-whatsapp" title={t('account.emergencyContact')} subtitle={emergencyContact || t('account.emergencyContactNotSet')} onPress={() => setView('emergencyContact')} />
       <AccountRow icon="notifications" title={t('account.notifications')} subtitle={t('account.notificationsSubtitle')} onPress={() => Linking.openSettings().catch(() => {})} />
       <AccountRow icon="language" title={t('account.language')} subtitle={t(lang === 'am' ? 'language.amharic' : 'language.english')} onPress={() => setView('language')} />
       <AccountRow icon="help-circle" title={t('account.helpSupport')} subtitle={SUPPORT_EMAIL} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('VOOM support')}`).catch(() => Alert.alert(t('account.noEmailAppTitle'), t('account.noEmailAppBody',{email:SUPPORT_EMAIL})))} />
@@ -835,6 +896,7 @@ const styles = StyleSheet.create({
   locationInput: { height: 48, backgroundColor: C.paper, borderRadius: 11, marginBottom: 8, paddingHorizontal: 12, justifyContent: 'center' },
   locationText: { fontSize: 15, fontWeight: '700', color: C.ink },
   textInput: { flex: 1, fontSize: 15, fontWeight: '700', color: C.ink },
+  fieldInput: { height: 48, borderRadius: 12, backgroundColor: C.soft, paddingHorizontal: 14, fontSize: 15, fontWeight: '600', color: C.ink, marginTop: 4 },
   sectionLabel: { marginTop: 22, marginBottom: 10, color: C.muted, fontWeight: '800', fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase' },
   destinationRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 9, borderBottomWidth: 1, borderBottomColor: C.line },
   placeIcon: { width: 42, height: 42, borderRadius: 12, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginRight: 12 },

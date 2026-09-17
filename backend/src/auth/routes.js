@@ -22,6 +22,7 @@ function publicUser(user) {
   return {
     id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role,
     phoneVerified: !!user.phoneVerifiedAt, vehicleModel: user.vehicleModel, vehiclePlate: user.vehiclePlate,
+    verificationStatus: user.verificationStatus,
   };
 }
 function vehicleFields(body, role) {
@@ -29,6 +30,22 @@ function vehicleFields(body, role) {
   const vehicleModel = typeof body?.vehicleModel === 'string' ? body.vehicleModel.trim().slice(0, 60) || null : null;
   const vehiclePlate = typeof body?.vehiclePlate === 'string' ? body.vehiclePlate.trim().slice(0, 20) || null : null;
   return { vehicleModel, vehiclePlate };
+}
+function isPhotoDataUri(value) {
+  return typeof value === 'string' && /^data:image\/(jpeg|jpg|png|webp);base64,/.test(value) && value.length < 8_000_000;
+}
+// Drivers submit their Fayda national ID number plus a selfie and an ID photo so
+// VOOM can review and verify them remotely instead of requiring an office visit.
+function identityFields(body, role) {
+  if (role !== 'DRIVER') return { verificationStatus: 'NOT_REQUIRED' };
+  const faydaNumber = typeof body?.faydaNumber === 'string' ? body.faydaNumber.replace(/\D/g, '') : '';
+  if (faydaNumber.length !== 12) throw new HttpError(400, 'Enter your 12-digit Fayda ID number.');
+  if (!isPhotoDataUri(body?.selfiePhoto)) throw new HttpError(400, 'A selfie photo is required for driver accounts.');
+  if (!isPhotoDataUri(body?.idPhoto)) throw new HttpError(400, 'A photo of your national ID is required for driver accounts.');
+  return {
+    faydaNumber, selfiePhoto: body.selfiePhoto, idPhoto: body.idPhoto,
+    verificationStatus: 'PENDING',
+  };
 }
 
 router.post('/register', async (req, res, next) => {
@@ -44,7 +61,10 @@ router.post('/register', async (req, res, next) => {
     const existingPhone = await prisma.user.findUnique({ where: { phone } });
     if (existingPhone) throw new HttpError(409, 'An account with this phone number already exists.');
     const user = await prisma.user.create({
-      data: { name, email, phone, phoneVerifiedAt: new Date(), passwordHash: await hashPassword(password), role, ...vehicleFields(req.body, role) },
+      data: {
+        name, email, phone, phoneVerifiedAt: new Date(), passwordHash: await hashPassword(password), role,
+        ...vehicleFields(req.body, role), ...identityFields(req.body, role),
+      },
     });
     res.status(201).json({ token: signToken(user), user: publicUser(user) });
   } catch (err) { next(err); }

@@ -32,18 +32,30 @@ enum PaymentStatus {
   FAILED
 }
 
+enum VerificationStatus {
+  NOT_REQUIRED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
 model User {
-  id              String    @id @default(cuid())
-  name            String
-  email           String?   @unique
-  phone           String?   @unique
-  passwordHash    String?
-  role            Role      @default(RIDER)
-  phoneVerifiedAt DateTime?
-  vehicleModel    String?
-  vehiclePlate    String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                 String              @id @default(cuid())
+  name               String
+  email              String?             @unique
+  phone              String?             @unique
+  passwordHash       String?
+  role               Role                @default(RIDER)
+  phoneVerifiedAt    DateTime?
+  vehicleModel       String?
+  vehiclePlate       String?
+  faydaNumber        String?
+  selfiePhoto        String?             @db.Text
+  idPhoto            String?             @db.Text
+  verificationStatus VerificationStatus  @default(NOT_REQUIRED)
+  verifiedAt         DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   tripsAsRider  Trip[] @relation("RiderTrips")
   tripsAsDriver Trip[] @relation("DriverTrips")

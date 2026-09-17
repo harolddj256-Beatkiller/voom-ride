@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import {
   SafeAreaView, View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { C } from './theme';
 import { useSession } from './session';
 import { useI18n } from './i18n';
+import { captureIdentityPhoto } from './photoCapture';
 
 function Field({ label, ...props }) {
   return (
@@ -43,8 +44,21 @@ function RoleToggle({ role, setRole }) {
   );
 }
 
+function PhotoField({ label, photo, takeLabel, retakeLabel, onCapture, disabled }) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.label}>{label}</Text>
+      <TouchableOpacity style={styles.photoButton} onPress={onCapture} disabled={disabled}>
+        {photo ? <Image source={{ uri: photo }} style={styles.photoThumb} /> : <View style={styles.photoPlaceholder} />}
+        <Text style={styles.photoButtonText}>{photo ? retakeLabel : takeLabel}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 // Signup always collects both a verified phone (via OTP) and an email + password,
-// so every VOOM account can be reached both ways.
+// so every VOOM account can be reached both ways. Drivers additionally submit a
+// Fayda ID number and two photos so VOOM can review and verify them remotely.
 function SignupForm({ role, vehicleModel, setVehicleModel, vehiclePlate, setVehiclePlate }) {
   const { t } = useI18n();
   const { register, sendOtp } = useSession();
@@ -55,8 +69,26 @@ function SignupForm({ role, vehicleModel, setVehicleModel, vehiclePlate, setVehi
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [faydaNumber, setFaydaNumber] = useState('');
+  const [selfiePhoto, setSelfiePhoto] = useState(null);
+  const [idPhoto, setIdPhoto] = useState(null);
+  const [capturing, setCapturing] = useState(false);
 
-  const detailsValid = name.trim().length >= 2 && email.trim().length > 3 && password.length >= 8 && phone.trim().length >= 8;
+  const isDriver = role === 'DRIVER';
+  const identityValid = !isDriver || (faydaNumber.replace(/\D/g, '').length === 12 && selfiePhoto && idPhoto);
+  const detailsValid = name.trim().length >= 2 && email.trim().length > 3 && password.length >= 8 && phone.trim().length >= 8 && identityValid;
+
+  async function capture(setPhoto) {
+    setCapturing(true);
+    try {
+      const photo = await captureIdentityPhoto(t('auth.cameraDeniedMessage'));
+      if (photo) setPhoto(photo);
+    } catch (e) {
+      Alert.alert(t('auth.couldNotCapturePhoto'), e.message);
+    } finally {
+      setCapturing(false);
+    }
+  }
 
   async function requestCode() {
     setBusy(true);
@@ -73,7 +105,10 @@ function SignupForm({ role, vehicleModel, setVehicleModel, vehiclePlate, setVehi
   async function submit() {
     setBusy(true);
     try {
-      await register({ name, email, password, phone: phone.trim(), code: code.trim(), role, vehicleModel, vehiclePlate });
+      await register({
+        name, email, password, phone: phone.trim(), code: code.trim(), role, vehicleModel, vehiclePlate,
+        ...(isDriver ? { faydaNumber: faydaNumber.replace(/\D/g, ''), selfiePhoto, idPhoto } : {}),
+      });
     } catch (e) {
       Alert.alert(t('auth.couldNotCreateAccount'), e.message);
     } finally {
@@ -86,16 +121,20 @@ function SignupForm({ role, vehicleModel, setVehicleModel, vehiclePlate, setVehi
       <Field label={t('auth.fullName')} value={name} onChangeText={setName} autoCapitalize="words" editable={!sent} />
       <Field label={t('auth.emailLabel')} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" editable={!sent} />
       <Field label={t('auth.password')} value={password} onChangeText={setPassword} secureTextEntry editable={!sent} />
-      {role === 'DRIVER' && (
+      {isDriver && (
         <>
           <Field label={t('auth.vehicleModel')} value={vehicleModel} onChangeText={setVehicleModel} placeholder={t('auth.vehicleModelPlaceholder')} editable={!sent} />
           <Field label={t('auth.plateNumber')} value={vehiclePlate} onChangeText={setVehiclePlate} autoCapitalize="characters" editable={!sent} />
+          <Field label={t('auth.faydaNumber')} value={faydaNumber} onChangeText={setFaydaNumber} keyboardType="number-pad" placeholder={t('auth.faydaNumberPlaceholder')} maxLength={12} editable={!sent} />
+          <Text style={styles.hint}>{t('auth.identityNote')}</Text>
+          <PhotoField label={t('auth.selfiePhoto')} photo={selfiePhoto} takeLabel={t('auth.takeSelfie')} retakeLabel={t('auth.retakeSelfie')} disabled={sent || capturing} onCapture={() => capture(setSelfiePhoto)} />
+          <PhotoField label={t('auth.idPhoto')} photo={idPhoto} takeLabel={t('auth.takeIdPhoto')} retakeLabel={t('auth.retakeIdPhoto')} disabled={sent || capturing} onCapture={() => capture(setIdPhoto)} />
         </>
       )}
       <Field label={t('auth.phoneLabel')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={!sent} />
       {!sent && <Text style={styles.hint}>{t('auth.verifyPhoneFirst')}</Text>}
       {!sent && (
-        <Button disabled={busy || !detailsValid} onPress={requestCode}>
+        <Button disabled={busy || capturing || !detailsValid} onPress={requestCode}>
           {busy ? <ActivityIndicator color={C.paper} /> : t('auth.sendCode')}
         </Button>
       )}
@@ -253,6 +292,10 @@ const styles = StyleSheet.create({
   methodPillActive: { borderColor: C.ink, backgroundColor: '#F8FFE9' },
   methodText: { fontWeight: '700', color: C.muted },
   methodTextActive: { color: C.ink },
+  photoButton: { flexDirection: 'row', alignItems: 'center', gap: 12, height: 56, borderRadius: 12, backgroundColor: C.soft, paddingHorizontal: 10 },
+  photoThumb: { width: 40, height: 40, borderRadius: 8 },
+  photoPlaceholder: { width: 40, height: 40, borderRadius: 8, backgroundColor: C.line },
+  photoButtonText: { fontWeight: '800', color: C.ink },
   field: { marginBottom: 12 },
   label: { fontSize: 12, fontWeight: '800', color: C.muted, marginBottom: 6 },
   input: { height: 50, borderRadius: 12, backgroundColor: C.soft, paddingHorizontal: 14, fontSize: 15, fontWeight: '600', color: C.ink },
