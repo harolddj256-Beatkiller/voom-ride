@@ -13,7 +13,11 @@ const MARKETS = {
       { latitude: 9.0134, longitude: 38.7636, label: 'Kazanchis' },
       { latitude: 9.0289, longitude: 38.7996, label: 'CMC' },
     ],
-    payments: ['CHAPA', 'CASH'],
+    paymentChannels: [
+      { id: 'CASH', label: 'Cash', icon: 'cash-outline', backend: 'CASH', info: 'Pay your driver directly in cash when the trip is complete. No online charge.' },
+      { id: 'TELEBIRR', label: 'Telebirr', icon: 'phone-portrait-outline', backend: 'CHAPA', info: "Opens Chapa's secure checkout, where you pay with Telebirr." },
+      { id: 'CBE', label: 'CBE Birr', icon: 'business-outline', backend: 'CHAPA', info: "Opens Chapa's secure checkout, where you pay with your CBE account or CBE Birr." },
+    ],
     rideTypes: [
       { id: 'mini', name: 'Voom Mini', eta: 3, seats: 4, baseFare: 90, perKm: 38, minFare: 180, icon: 'car-sport', note: 'Affordable everyday rides' },
       { id: 'comfort', name: 'Voom Comfort', eta: 5, seats: 4, baseFare: 120, perKm: 50, minFare: 260, icon: 'car', note: 'Newer cars • extra comfort' },
@@ -33,7 +37,11 @@ const MARKETS = {
       { latitude: 0.3472, longitude: 32.6160, label: 'Naguru' },
       { latitude: 0.2841, longitude: 32.5917, label: 'Munyonyo' },
     ],
-    payments: ['CHAPA', 'CASH'],
+    paymentChannels: [
+      { id: 'CASH', label: 'Cash', icon: 'cash-outline', backend: 'CASH', info: 'Pay your driver directly in cash when the trip is complete. No online charge.' },
+      { id: 'MTN_MOMO', label: 'MTN MoMo', icon: 'phone-portrait-outline', backend: 'CHAPA', info: "Opens Chapa's secure checkout, where you pay with MTN Mobile Money." },
+      { id: 'AIRTEL_MONEY', label: 'Airtel Money', icon: 'phone-portrait-outline', backend: 'CHAPA', info: "Opens Chapa's secure checkout, where you pay with Airtel Money." },
+    ],
     rideTypes: [
       { id: 'boda', name: 'Voom Boda', eta: 2, seats: 1, baseFare: 1500, perKm: 900, minFare: 3000, icon: 'bicycle', note: 'Fastest through traffic' },
       { id: 'mini', name: 'Voom Mini', eta: 3, seats: 4, baseFare: 3000, perKm: 2200, minFare: 7000, icon: 'car-sport', note: 'Affordable everyday rides' },

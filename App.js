@@ -19,6 +19,7 @@ import VoomMap from './src/VoomMap';
 import { usePickup, withTimeout } from './src/usePickup';
 import { useTripRoute } from './src/useTripRoute';
 import { useTripPolling } from './src/useTripPolling';
+import { usePaymentChannel } from './src/usePaymentChannel';
 import { MAPS_CONNECTED, MAPS_SETUP_NOTE, mapsRequest, newSessionToken } from './src/mapsClient';
 import { api, API_BASE_URL } from './src/api';
 import { SessionProvider, useSession } from './src/session';
@@ -86,7 +87,8 @@ function VoomApp() {
   const [screen,setScreen]=useState('home');
   const [destination,setDestination]=useState({...market.destinations[0]});
   const [selectedRide,setSelectedRide]=useState(market.rideTypes[0].id);
-  const [payment,setPayment]=useState(market.payments[0]);
+  const [paymentChannelId,selectPaymentChannel]=usePaymentChannel(market);
+  const paymentChannel=market.paymentChannels.find(c => c.id===paymentChannelId) || market.paymentChannels[0];
   const [activeTrip,setActiveTrip]=useState(null);
   const [menuOpen,setMenuOpen]=useState(false);
   const [marketOpen,setMarketOpen]=useState(false);
@@ -101,7 +103,7 @@ function VoomApp() {
   function changeMarket(id,point) {
     pickupModel.reset(MARKETS[id],point);
     setMarketId(id); setDestination({...MARKETS[id].destinations[0]});
-    setSelectedRide(MARKETS[id].rideTypes[0].id); setPayment(MARKETS[id].payments[0]);
+    setSelectedRide(MARKETS[id].rideTypes[0].id);
     setActiveTrip(null); setScreen('home');
   }
   function exitTrip() { setActiveTrip(null); setScreen('home'); }
@@ -115,7 +117,7 @@ function VoomApp() {
         destination: { latitude: destination.latitude, longitude: destination.longitude, label: destination.label },
         distanceMeters: routeInfo.distanceMeters,
         durationSeconds: routeInfo.durationSeconds,
-        paymentMethod: payment,
+        paymentMethod: paymentChannel.backend,
       });
       setActiveTrip(trip); setScreen('trip');
     } catch (e) {
@@ -138,18 +140,18 @@ function VoomApp() {
       onConfirm={() => {pickupModel.cancel();setScreen('options');}} />}
     {screen==='options' && <RideOptions market={market} pickup={pickup} destination={destination}
       routeInfo={routeInfo} selectedRide={selectedRide} setSelectedRide={setSelectedRide}
-      payment={payment} setPaymentOpen={setPaymentOpen} chosen={chosen} requestRide={requestRide}
+      paymentChannel={paymentChannel} setPaymentOpen={setPaymentOpen} chosen={chosen} requestRide={requestRide}
       onBack={() => setScreen('pickup')} />}
     {screen==='trip' && activeTrip && <TripScreen market={market} initialTrip={activeTrip} onDone={exitTrip} onExit={exitTrip} />}
     {screen==='activity' && <ActivityScreen onBack={() => setScreen('home')} />}
-    {screen==='wallet' && <WalletScreen market={market} onBack={() => setScreen('home')} />}
+    {screen==='wallet' && <WalletScreen market={market} paymentChannelId={paymentChannelId} selectPaymentChannel={selectPaymentChannel} onBack={() => setScreen('home')} />}
     {screen==='account' && <AccountScreen onBack={() => setScreen('home')} />}
     <MenuModal visible={menuOpen} close={() => setMenuOpen(false)} user={user}
       go={next => {setMenuOpen(false);setScreen(next);}}
       driver={() => {pickupModel.cancel();setMenuOpen(false);setDriverMode(true);}} />
     <MarketModal visible={marketOpen} marketId={marketId} setMarketId={changeMarket} close={() => setMarketOpen(false)} />
-    <PaymentModal visible={paymentOpen} options={market.payments} value={payment}
-      onChoose={p => {setPayment(p);setPaymentOpen(false);}} close={() => setPaymentOpen(false)} />
+    <PaymentModal visible={paymentOpen} channels={market.paymentChannels} value={paymentChannelId}
+      onChoose={id => {selectPaymentChannel(id);setPaymentOpen(false);}} close={() => setPaymentOpen(false)} />
   </SafeAreaView>;
 }
 function InfoNotice({text}) {
@@ -315,7 +317,7 @@ async function openDirections(pickup,destination) {
   try {await Linking.openURL(googleDirectionsURL(pickup,destination));}
   catch (_) {Alert.alert('Could not open Google Maps','Try again with an internet connection.');}
 }
-function RideOptions({market,pickup,destination,routeInfo,selectedRide,setSelectedRide,payment,setPaymentOpen,chosen,requestRide,onBack}) {
+function RideOptions({market,pickup,destination,routeInfo,selectedRide,setSelectedRide,paymentChannel,setPaymentOpen,chosen,requestRide,onBack}) {
   return <View style={styles.flex}>
     <VoomMap market={market} pickup={pickup} destination={destination} routeInfo={routeInfo} style={{height:'30%'}}/>
     <TouchableOpacity style={[styles.circleShadow,styles.mapBack]} onPress={onBack}><Ionicons name="arrow-back" size={22}/></TouchableOpacity>
@@ -332,8 +334,8 @@ function RideOptions({market,pickup,destination,routeInfo,selectedRide,setSelect
         </TouchableOpacity>)}
         <TouchableOpacity style={styles.locationAction} onPress={() => openDirections(pickup,destination)}><Ionicons name="navigate-outline" size={22}/>
           <View style={{flex:1}}><Text style={styles.rideName}>Open in Google Maps</Text><Text style={styles.mutedSmall}>External directions • does not update VOOM's fare</Text></View></TouchableOpacity>
-        <TouchableOpacity style={styles.paymentRow} onPress={() => setPaymentOpen(true)}><View style={styles.paymentIcon}><Ionicons name="wallet-outline" size={20}/></View>
-          <View style={{flex:1}}><Text style={styles.paymentTitle}>{PAYMENT_LABELS[payment]}</Text><Text style={styles.mutedSmall}>Tap to change payment method</Text></View><Ionicons name="chevron-forward" size={18}/></TouchableOpacity>
+        <TouchableOpacity style={styles.paymentRow} onPress={() => setPaymentOpen(true)}><View style={styles.paymentIcon}><Ionicons name={paymentChannel.icon} size={20}/></View>
+          <View style={{flex:1}}><Text style={styles.paymentTitle}>{paymentChannel.label}</Text><Text style={styles.mutedSmall}>Tap to change payment method</Text></View><Ionicons name="chevron-forward" size={18}/></TouchableOpacity>
         {!!routeInfo.validationError && <Text style={styles.errorText}>{routeInfo.validationError}</Text>}
       </ScrollView>
       <AppButton disabled={routeInfo.loading || !!routeInfo.validationError} onPress={requestRide}>Request {chosen.name}</AppButton>
@@ -538,14 +540,19 @@ function ActivityScreen({onBack}) {
   </View>;
 }
 
-function WalletScreen({ market, onBack }) {
+function WalletScreen({ market, paymentChannelId, selectPaymentChannel, onBack }) {
   const [receipts,setReceipts]=useState([]);
   useEffect(() => { let alive=true; api.listReceipts().then(({receipts}) => { if(alive)setReceipts(receipts); }).catch(() => {}); return () => {alive=false;}; },[]);
+  function choose(channel) {
+    selectPaymentChannel(channel.id);
+    Alert.alert(`${channel.label} set as default`, channel.info);
+  }
   return (
     <View style={styles.page}>
       <ScreenHeader title="Wallet" onBack={onBack} />
       <Text style={styles.sectionLabel}>Payment methods</Text>
-      {market.payments.map((p) => <PaymentItem key={p} name={PAYMENT_LABELS[p]} />)}
+      <Text style={styles.mutedSmall}>Tap a method to set it as your default for new rides.</Text>
+      {market.paymentChannels.map((c) => <PaymentChannelButton key={c.id} channel={c} selected={c.id===paymentChannelId} onSelect={choose} />)}
       <Text style={styles.sectionLabel}>Receipts</Text>
       {!receipts.length && <Text style={styles.muted}>Receipts from paid rides will appear here.</Text>}
       {receipts.map(r => <View key={r.id} style={styles.paymentItem}>
@@ -621,13 +628,16 @@ function Stat({ value, label }) {
   return <View style={styles.stat}><Text style={styles.statValue}>{value}</Text><Text style={styles.mutedSmall}>{label}</Text></View>;
 }
 
-function PaymentItem({ name }) {
+function PaymentChannelButton({ channel, selected, onSelect }) {
   return (
-    <View style={styles.paymentItem}>
-      <View style={styles.paymentIcon}><Ionicons name="card-outline" size={20} /></View>
-      <Text style={[styles.paymentTitle, { flex: 1 }]}>{name}</Text>
-      <Ionicons name="chevron-forward" size={18} color={C.muted} />
-    </View>
+    <TouchableOpacity style={[styles.marketRow, selected && styles.marketSelected]} onPress={() => onSelect(channel)}>
+      <View style={styles.paymentIcon}><Ionicons name={channel.icon} size={20} /></View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.paymentTitle}>{channel.label}</Text>
+        <Text style={styles.mutedSmall}>{channel.info}</Text>
+      </View>
+      {selected ? <Ionicons name="checkmark-circle" size={22} color={C.darkGreen} /> : <Ionicons name="chevron-forward" size={18} color={C.muted} />}
+    </TouchableOpacity>
   );
 }
 
@@ -690,20 +700,14 @@ function MarketModal({ visible, marketId, setMarketId, close }) {
   );
 }
 
-function PaymentModal({ visible, options, value, onChoose, close }) {
+function PaymentModal({ visible, channels, value, onChoose, close }) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
       <View style={styles.modalBackdrop}>
         <View style={styles.ratingCard}>
           <View style={styles.dragHandle} />
           <Text style={styles.sheetTitle}>Payment method</Text><Text style={styles.muted}>Choose how you'll pay for this ride.</Text>
-          {options.map((p) => (
-            <TouchableOpacity key={p} style={[styles.marketRow, value === p && styles.marketSelected]} onPress={() => onChoose(p)}>
-              <View style={styles.paymentIcon}><Ionicons name="wallet-outline" size={20} /></View>
-              <Text style={[styles.paymentTitle, { flex: 1 }]}>{PAYMENT_LABELS[p]}</Text>
-              {value === p && <Ionicons name="checkmark-circle" size={23} color={C.darkGreen} />}
-            </TouchableOpacity>
-          ))}
+          {channels.map((c) => <PaymentChannelButton key={c.id} channel={c} selected={value === c.id} onSelect={(channel) => onChoose(channel.id)} />)}
         </View>
       </View>
     </Modal>
