@@ -1,55 +1,40 @@
-VOOM v2.0
-=========
+BEKLO v2.1 - START HERE
+=======================
 
-VOOM now runs against a real backend: accounts, ride requests, Chapa payments and
-receipts are real and stored in a database, not simulated on the device.
+Do these in order. Fix the backend first, look at the app last.
 
-BEFORE YOU RUN THE APP
-1. Deploy the backend in backend/ (see backend/README.md) and get its URL, or ask
-   whoever manages VOOM's backend for the deployed URL.
-2. Copy .env.example to .env in this folder and set:
-     EXPO_PUBLIC_VOOM_API_URL=https://your-deployed-backend-url
-   The app will show a clear "Backend not configured" screen instead of starting
-   if this is missing.
+The first time you open a .command file, your Mac may say it "cannot be
+opened". If so: right-click the file > Open > Open. Only once per file.
 
-OPEN ON YOUR PHONE WITH EXPO GO
-1. Install or update Expo Go from the App Store or Google Play.
-2. Connect the phone and Mac to the same Wi-Fi network.
-3. Keep all project files together in one folder.
-4. Double-click OPEN IN EXPO GO.command.
-5. Keep Terminal open and scan the QR code with Expo Go.
 
-MAC BROWSER REVIEW
-Double-click REVIEW VOOM.command.
+STEP 1 - SEND THE NEW BACKEND ONLINE
+   Double-click:  UPDATE BACKEND.command
+   - Wait. The first time it can be quiet for a minute while it gets ready.
+   - Vercel shows a LINK and a CODE. Press Enter if it asks, or copy the
+     link into your browser. Sign in with the account that has voom-backend.
+   - When it asks for the admin phone, type the phone you use in the app,
+     like +2519XXXXXXXX.
+   - Wait 1-2 minutes. When you see {"status":"ok"}, the backend is updated.
 
-First launch downloads the app dependencies. Node.js and internet are required.
-The launcher never asks for sudo, changes global npm settings, or deletes your cache.
-It retries temporary downloads, reuses a private VOOM cache, and records a successful
-install only after npm finishes. It cannot make an unavailable network work.
 
-If macOS blocks the launcher, right-click it and choose Open. If macOS still
-refuses, review the item in System Settings > Privacy & Security. Only approve
-files you trust; do not disable system-wide security.
+STEP 2 - CHECK THE BOSS PAGE WORKS
+   Open https://voom-backend-kappa.vercel.app/admin
+   Sign in with the EMAIL and PASSWORD of the account that uses your admin
+   phone. New drivers show up here with their Fayda ID and photos.
+   Drivers cannot take any rides until you press Approve.
 
-IMPORTANT — EXPO CLIENT COMPATIBILITY
-This edition uses Expo SDK 57 / React Native 0.86 and is intended for the current
-Expo Go app. It is not an APK, IPA, or standalone Mac app. The launcher starts a
-development server, and your phone loads VOOM by scanning its QR code.
 
-USING VOOM
-- Create an account or sign in (email/password or phone number with a one-time
-  code) — the app requires a real account before you can request a ride.
-- Open VOOM: Ethiopia / Addis Ababa is the default. Uganda is also available.
-- Tap Use my location and allow location access when requested.
-- Search a destination, use Search address on device, or choose a map pin.
-- Confirm the destination pin, then tap/drag the pickup pin to the exact entrance.
-- Choose a ride and payment method, then request it. This creates a real trip on
-  the backend that a driver account can see and accept.
-- To try the driver side, sign up a second account with the Driver role (a real
-  vehicle model/plate is required at signup) and use "Drive with VOOM" from the
-  menu to accept, start and complete ride requests.
-- Riders pay by cash (settled directly with the driver) or Chapa (opens a hosted
-  checkout in your browser); a receipt is generated automatically once paid.
+STEP 3 - PUT THIS VERSION ON GITHUB
+   See GITHUB-UPDATE.txt. This stops your versions splitting again.
 
-See README.md for what's implemented and what isn't yet; MAPS-SETUP.md covers the
-optional Google Places/routing integration; backend/README.md covers backend setup.
+
+STEP 4 - NOW LOOK AT THE APP ON YOUR PHONE
+   Install "Expo Go" on your phone.
+   Double-click:  OPEN IN EXPO GO.command
+   Scan the QR code. The backend address is already inside.
+   (Or: REVIEW BEKLO IN BROWSER.command for a quick look on the Mac.)
+
+
+STEP 5 - LATER: THE REAL IPHONE APP
+   Needs an Apple Developer account ($99/year) + a free Expo account.
+   Double-click:  BUILD BEKLO IPHONE.command and follow the 4 steps.

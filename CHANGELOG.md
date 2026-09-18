@@ -1,3 +1,24 @@
+# v2.1 — Beklo (joined version)
+
+- Renamed VOOM to Beklo everywhere people can see it (English and Amharic: በቅሎ),
+  including ride types (Beklo Mini / Comfort / XL / Boda), SMS codes, receipts
+  (new receipts start with BEKLO-), Chapa checkout title and the admin page.
+- New look: deep blue + orange, and an original mule-head logo (app icon, Android
+  icon, splash screen, in-app logo). Artwork in `assets/`.
+- The live backend address (voom-backend-kappa.vercel.app) is built in, so the
+  app works without a .env file. A .env value still overrides it.
+- Safety: drivers can only see and accept ride requests after an admin approves
+  their Fayda ID (enforced on the server and shown in the app).
+- Safety: two drivers can no longer accept the same ride at the same moment.
+- Admin: the phone number(s) in `ADMIN_PHONES` become the admin account. Phones
+  are used (not emails) because only phones are proven with an SMS code.
+- Drivers see their approval as soon as it happens (the app refreshes the account).
+- Added `UPDATE BACKEND.command` (Vercel deploy + admin phone), `BUILD BEKLO
+  IPHONE.command` (EAS build -> TestFlight), `eas.json`, and one shared setup
+  script for all launchers.
+- Kept internal names (VoomMap, EXPO_PUBLIC_VOOM_API_URL, saved-login key) so
+  nothing breaks for existing accounts.
+
 # v2.0 — Real backend
 
 - Added a real backend (`backend/`): Express + Prisma/Postgres, deployable to Vercel.

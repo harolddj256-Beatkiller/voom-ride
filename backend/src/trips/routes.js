@@ -2,7 +2,7 @@
 const express = require('express');
 const { prisma } = require('../db');
 const { HttpError } = require('../errors');
-const { authenticate, requireRole } = require('../middleware/authenticate');
+const { authenticate, requireRole, requireVerifiedDriver } = require('../middleware/authenticate');
 const { getMarket, getRideType } = require('../markets');
 const { coordinates, distanceKm, validateTrip, estimateFare } = require('../geo');
 const { createReceiptForTrip } = require('../receipts/service');
@@ -90,7 +90,7 @@ router.get('/', authenticate(), async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.get('/available', authenticate(), requireRole('DRIVER'), async (req, res, next) => {
+router.get('/available', authenticate(), requireVerifiedDriver(), async (req, res, next) => {
   try {
     const market = String(req.query.market || '');
     getMarket(market);
@@ -114,16 +114,18 @@ router.get('/:id', authenticate(), async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.post('/:id/accept', authenticate(), requireRole('DRIVER'), async (req, res, next) => {
+router.post('/:id/accept', authenticate(), requireVerifiedDriver(), async (req, res, next) => {
   try {
     const trip = await prisma.trip.findUnique({ where: { id: req.params.id } });
     if (!trip) throw new HttpError(404, 'Trip not found.');
     if (trip.status !== 'REQUESTED' || trip.driverId) throw new HttpError(409, 'Trip is no longer available.');
-    const updated = await prisma.trip.update({
-      where: { id: trip.id },
+    // Only succeeds if nobody else grabbed the trip a split second earlier.
+    const claimed = await prisma.trip.updateMany({
+      where: { id: trip.id, status: 'REQUESTED', driverId: null },
       data: { driverId: req.user.id, status: 'ACCEPTED', acceptedAt: new Date() },
-      include: { rider: true, driver: true },
     });
+    if (claimed.count !== 1) throw new HttpError(409, 'Trip is no longer available.');
+    const updated = await prisma.trip.findUnique({ where: { id: trip.id }, include: { rider: true, driver: true } });
     res.json({ trip: tripView(updated) });
   } catch (err) { next(err); }
 });

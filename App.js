@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import VoomMap from './src/VoomMap';
+import BekloLogo from './src/BekloLogo';
 import { usePickup, withTimeout } from './src/usePickup';
 import { useTripRoute } from './src/useTripRoute';
 import { useTripPolling } from './src/useTripPolling';
@@ -70,7 +71,7 @@ function Gate() {
     return (
       <SafeAreaView style={[styles.safe, styles.centerAll, { paddingHorizontal: 28 }]}>
         <Text style={styles.sheetTitle}>Backend not configured</Text>
-        <Text style={styles.muted}>Set EXPO_PUBLIC_VOOM_API_URL to your deployed VOOM backend URL before running the app.</Text>
+        <Text style={styles.muted}>Set EXPO_PUBLIC_VOOM_API_URL to your deployed Beklo backend URL before running the app.</Text>
       </SafeAreaView>
     );
   }
@@ -153,7 +154,7 @@ function VoomApp() {
   </SafeAreaView>;
 }
 function InfoNotice({text}) {
-  return <View style={styles.infoNotice}><Ionicons name="information-circle-outline" size={16} color={C.darkGreen}/>
+  return <View style={styles.infoNotice}><Ionicons name="information-circle-outline" size={16} color={C.deep}/>
     <Text style={styles.infoNoticeText}>{text}</Text></View>;
 }
 function Home({market,pickupModel,setScreen,setMenuOpen,setMarketOpen,selectPlace}) {
@@ -167,7 +168,7 @@ function Home({market,pickupModel,setScreen,setMenuOpen,setMarketOpen,selectPlac
       <TouchableOpacity style={styles.cityPill} onPress={() => setMarketOpen(true)}><Ionicons name="location" size={17}/><Text style={styles.cityPillText}>{market.city}</Text><Ionicons name="chevron-down" size={15}/></TouchableOpacity>
       <View style={{width:46}}/>
     </View>
-    <View style={styles.logoFloat}><Text style={styles.logo}>VOOM</Text></View>
+    <View style={styles.logoFloat}><BekloLogo size={26} color={C.paper}/></View>
     <View style={[styles.homeSheet,{maxHeight:'70%'}]} onLayout={e => setSheetHeight(e.nativeEvent.layout.height)}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.dragHandle}/><Text style={styles.heroTitle}>{t('home.whereTo')}</Text>
@@ -333,7 +334,7 @@ function RideOptions({market,pickup,destination,routeInfo,selectedRide,setSelect
         {MAPS_CONNECTED && routeInfo.source!=='google' && !routeInfo.loading && <AppButton secondary onPress={routeInfo.retry}>{t('options.retryRoute')}</AppButton>}
         {market.rideTypes.map(ride => { const rideInfo = rideTypeText(lang, ride.id) || ride; return <TouchableOpacity key={ride.id} disabled={routeInfo.loading}
           style={[styles.rideRow,selectedRide===ride.id && styles.rideSelected]} onPress={() => setSelectedRide(ride.id)}>
-          <View style={[styles.rideIcon,selectedRide===ride.id && {backgroundColor:C.voom}]}><Ionicons name={ride.icon} size={28}/></View>
+          <View style={[styles.rideIcon,selectedRide===ride.id && {backgroundColor:C.brand}]}><Ionicons name={ride.icon} size={28}/></View>
           <View style={{flex:1}}><Text style={styles.rideName}>{rideInfo.name}</Text><Text style={styles.mutedSmall}>{ride.seats} {ride.seats>1?t('options.seats'):t('options.seat')}</Text>
             <Text style={styles.rideNote}>{rideInfo.note}</Text></View>
           <View style={{alignItems:'flex-end'}}><Text style={styles.price}>{formatMoney(estimateFare(market,ride,routeInfo),market.currency)}</Text><Text style={styles.mutedSmall}>{t('options.estimatedFare')}</Text></View>
@@ -381,7 +382,7 @@ function TripScreen({market,initialTrip,onDone,onExit}) {
       try {await api.cancelTrip(current.id);onExit();} catch(e){Alert.alert(t('trip.couldNotCancel'),e.message);}
     }}]);
   function tripShareText() {
-    const lines=[`VOOM ${t('trip.pickup')==='Pickup'?'ride':t('trip.pickup')}`,
+    const lines=[`Beklo ${t('trip.pickup')==='Pickup'?'ride':t('trip.pickup')}`,
       `${t('trip.pickup')}: ${current.pickup.label} (${pointLabel(current.pickup)})`,
       `${t('trip.destination')}: ${current.destination.label} (${pointLabel(current.destination)})`];
     if (current.driver?.name) lines.push(t('trip.shareDriverLine',{name:current.driver.name,plate:current.driver.vehiclePlate || '—'}));
@@ -455,14 +456,23 @@ function TripScreen({market,initialTrip,onDone,onExit}) {
 }
 function DriverMode({market,onExit}) {
   const { t } = useI18n();
+  const { user, refreshUser } = useSession();
+  // Drivers can only see and take requests once an admin has approved their Fayda ID.
+  const approved = user?.verificationStatus === 'VERIFIED';
+  useEffect(() => {
+    if (approved) return undefined;
+    const timer=setInterval(refreshUser,15000);
+    return () => clearInterval(timer);
+  },[approved,refreshUser]);
   const [available,setAvailable]=useState([]);
   const [activeTrip,setActiveTrip]=useState(null);
   const [busy,setBusy]=useState(false);
   const [stats,setStats]=useState({earnings:0,count:0});
   const refreshAvailable=useCallback(async () => {
-    if (activeTrip) return;
-    try { const { trips } = await api.availableTrips(market.id); setAvailable(trips); } catch (_) { /* transient, retried on next tick */ }
-  },[market.id,activeTrip]);
+    if (activeTrip || !approved) return;
+    try { const { trips } = await api.availableTrips(market.id); setAvailable(trips); }
+    catch (e) { if (e?.status === 403) refreshUser(); /* otherwise transient, retried on next tick */ }
+  },[market.id,activeTrip,approved,refreshUser]);
   useEffect(() => {
     refreshAvailable();
     const timer=setInterval(refreshAvailable,5000);
@@ -502,13 +512,18 @@ function DriverMode({market,onExit}) {
     <StatusBar style="dark"/>
     <View style={styles.driverHeader}>
       <TouchableOpacity style={styles.circleSoft} onPress={onExit}><Ionicons name="arrow-back" size={22}/></TouchableOpacity>
-      <View style={{alignItems:'center'}}><Text style={styles.logoSmall}>VOOM</Text><Text style={styles.driverTag}>{t('driver.tag')}</Text></View><View style={{width:42}}/>
+      <View style={{alignItems:'center'}}><BekloLogo size={24}/><Text style={styles.driverTag}>{t('driver.tag')}</Text></View><View style={{width:42}}/>
     </View>
     <VoomMap market={market} pickup={activeTrip?.pickup || market.map} destination={activeTrip?.destination} style={{flex:1}}/>
     <View style={[styles.driverBottom,{maxHeight:'65%'}]}><ScrollView>
       <View style={styles.driverStats}><Stat value={formatMoney(stats.earnings,market.currency)} label={t('driver.totalEarnings')}/>
         <Stat value={String(stats.count)} label={t('driver.tripsCompleted')}/></View>
-      {!activeTrip && <>
+      {!activeTrip && !approved && (user?.verificationStatus==='REJECTED'
+        ? <View style={[styles.infoNotice,{backgroundColor:'#FBE7E2'}]}><Ionicons name="alert-circle-outline" size={16} color="#9A3412" />
+            <View style={{flex:1}}><Text style={[styles.infoNoticeText,{fontWeight:'800',color:'#9A3412'}]}>{t('account.verificationRejected')}</Text><Text style={[styles.infoNoticeText,{color:'#9A3412'}]}>{t('account.verificationRejectedBody')}</Text></View></View>
+        : <View style={styles.infoNotice}><Ionicons name="time-outline" size={16} color={C.deep} />
+            <View style={{flex:1}}><Text style={[styles.infoNoticeText,{fontWeight:'800'}]}>{t('account.verificationPending')}</Text><Text style={styles.infoNoticeText}>{t('account.verificationPendingBody')}</Text></View></View>)}
+      {!activeTrip && approved && <>
         <Text style={styles.sheetTitle}>{t('driver.nearbyRequests')}</Text>
         {!available.length && <Text style={styles.muted}>{t('driver.noRequests')}</Text>}
         {available.map(trip => <View key={trip.id} style={styles.rideRow}>
@@ -601,12 +616,12 @@ function WalletScreen({ market, paymentChannelId, selectPaymentChannel, onBack }
 const SUPPORT_EMAIL = 'harolddj256@gmail.com';
 
 const TERMS_TEXT = {
-  en: `By using VOOM you agree to arrange rides between riders and independent drivers on our platform. Fares are estimates based on distance and time and may change if the route changes. Cash payments are made directly to your driver; card and mobile-money payments are processed securely by Chapa, our payment partner. Either party may cancel a trip before pickup. Please treat drivers and riders with respect — abusive behavior can result in account suspension. VOOM is provided "as is" without warranties of any kind, and we are not liable for the conduct of drivers or riders. These terms may be updated as the service grows.`,
-  am: `VOOMን በመጠቀም በመድረካችን ላይ በተሳፋሪዎችና ራሳቸውን ችለው በሚሰሩ አሽከርካሪዎች መካከል ጉዞዎችን ለማመቻቸት ይስማማሉ። ዋጋዎች በርቀትና በጊዜ ላይ የተመሰረቱ ግምቶች ሲሆኑ መንገዱ ከተቀየረ ሊለወጡ ይችላሉ። የጥሬ ገንዘብ ክፍያዎች በቀጥታ ለአሽከርካሪዎ ይከፈላሉ፤ የካርድና የሞባይል ገንዘብ ክፍያዎች በክፍያ አጋራችን ቻፓ በኩል በደህንነት ይሰራሉ። ማንኛውም ወገን ከመነሳቱ በፊት ጉዞን መሰረዝ ይችላል። እባክዎ አሽከርካሪዎችንና ተሳፋሪዎችን በአክብሮት ያዙ — ተገቢ ያልሆነ ባህሪ የመለያ እገዳ ሊያስከትል ይችላል። VOOM ያለምንም ዋስትና እንዳለ ይቀርባል፣ እናም ስለ አሽከርካሪዎች ወይም ተሳፋሪዎች ባህሪ ተጠያቂ አንሆንም። እነዚህ ውሎች አገልግሎቱ እያደገ ሲሄድ ሊዘመኑ ይችላሉ።`,
+  en: `By using Beklo you agree to arrange rides between riders and independent drivers on our platform. Fares are estimates based on distance and time and may change if the route changes. Cash payments are made directly to your driver; card and mobile-money payments are processed securely by Chapa, our payment partner. Either party may cancel a trip before pickup. Please treat drivers and riders with respect — abusive behavior can result in account suspension. VOOM is provided "as is" without warranties of any kind, and we are not liable for the conduct of drivers or riders. These terms may be updated as the service grows.`,
+  am: `በቅሎን በመጠቀም በመድረካችን ላይ በተሳፋሪዎችና ራሳቸውን ችለው በሚሰሩ አሽከርካሪዎች መካከል ጉዞዎችን ለማመቻቸት ይስማማሉ። ዋጋዎች በርቀትና በጊዜ ላይ የተመሰረቱ ግምቶች ሲሆኑ መንገዱ ከተቀየረ ሊለወጡ ይችላሉ። የጥሬ ገንዘብ ክፍያዎች በቀጥታ ለአሽከርካሪዎ ይከፈላሉ፤ የካርድና የሞባይል ገንዘብ ክፍያዎች በክፍያ አጋራችን ቻፓ በኩል በደህንነት ይሰራሉ። ማንኛውም ወገን ከመነሳቱ በፊት ጉዞን መሰረዝ ይችላል። እባክዎ አሽከርካሪዎችንና ተሳፋሪዎችን በአክብሮት ያዙ — ተገቢ ያልሆነ ባህሪ የመለያ እገዳ ሊያስከትል ይችላል። VOOM ያለምንም ዋስትና እንዳለ ይቀርባል፣ እናም ስለ አሽከርካሪዎች ወይም ተሳፋሪዎች ባህሪ ተጠያቂ አንሆንም። እነዚህ ውሎች አገልግሎቱ እያደገ ሲሄድ ሊዘመኑ ይችላሉ።`,
 };
 const PRIVACY_TEXT = {
-  en: `We collect the information needed to run VOOM: your name, email or phone number, trip history, and location data while you're using the app. Payment details are handled by Chapa and are never stored on our servers. We use your data only to provide and improve the service — to match you with drivers, calculate fares, and generate receipts. We don't sell your personal data. You can request account deletion at any time by contacting support.`,
-  am: `VOOMን ለማስኬድ የሚያስፈልገንን መረጃ እንሰበስባለን፦ ስምዎን፣ ኢሜይል ወይም ስልክ ቁጥርዎን፣ የጉዞ ታሪክዎን፣ እና መተግበሪያውን ሲጠቀሙ የአካባቢ መረጃ። የክፍያ ዝርዝሮች በቻፓ የሚስተናገዱ ሲሆን በእኛ አገልጋዮች ላይ በጭራሽ አይቀመጡም። መረጃዎን የምንጠቀመው አገልግሎቱን ለማቅረብና ለማሻሻል ብቻ ነው — ከአሽከርካሪዎች ጋር ለማዛመድ፣ ዋጋ ለማስላት እና ደረሰኝ ለማዘጋጀት። የግል መረጃዎን አንሸጥም። በማንኛውም ጊዜ ድጋፍን በማነጋገር የመለያ ስረዛ መጠየቅ ይችላሉ።`,
+  en: `We collect the information needed to run Beklo: your name, email or phone number, trip history, and location data while you're using the app. Payment details are handled by Chapa and are never stored on our servers. We use your data only to provide and improve the service — to match you with drivers, calculate fares, and generate receipts. We don't sell your personal data. You can request account deletion at any time by contacting support.`,
+  am: `በቅሎን ለማስኬድ የሚያስፈልገንን መረጃ እንሰበስባለን፦ ስምዎን፣ ኢሜይል ወይም ስልክ ቁጥርዎን፣ የጉዞ ታሪክዎን፣ እና መተግበሪያውን ሲጠቀሙ የአካባቢ መረጃ። የክፍያ ዝርዝሮች በቻፓ የሚስተናገዱ ሲሆን በእኛ አገልጋዮች ላይ በጭራሽ አይቀመጡም። መረጃዎን የምንጠቀመው አገልግሎቱን ለማቅረብና ለማሻሻል ብቻ ነው — ከአሽከርካሪዎች ጋር ለማዛመድ፣ ዋጋ ለማስላት እና ደረሰኝ ለማዘጋጀት። የግል መረጃዎን አንሸጥም። በማንኛውም ጊዜ ድጋፍን በማነጋገር የመለያ ስረዛ መጠየቅ ይችላሉ።`,
 };
 
 function SafetyScreen({ onBack }) {
@@ -635,7 +650,7 @@ function LanguageScreen({ onBack }) {
       {options.map((opt) => (
         <TouchableOpacity key={opt.id} style={[styles.marketRow, lang === opt.id && styles.marketSelected]} onPress={() => setLang(opt.id)}>
           <View style={{ flex: 1 }}><Text style={styles.paymentTitle}>{opt.label}</Text></View>
-          {lang === opt.id && <Ionicons name="checkmark-circle" size={22} color={C.darkGreen} />}
+          {lang === opt.id && <Ionicons name="checkmark-circle" size={22} color={C.deep} />}
         </TouchableOpacity>
       ))}
     </View>
@@ -699,7 +714,7 @@ function AccountScreen({ onBack }) {
         <View><Text style={styles.sheetTitle}>{user.name}</Text><Text style={styles.muted}>{user.email || user.phone} • {user.role==='DRIVER'?t('account.driver'):t('account.rider')}</Text></View>
       </View>
       {user.role==='DRIVER' && user.verificationStatus==='PENDING' && (
-        <View style={styles.infoNotice}><Ionicons name="time-outline" size={16} color={C.darkGreen} />
+        <View style={styles.infoNotice}><Ionicons name="time-outline" size={16} color={C.deep} />
           <View style={{flex:1}}><Text style={[styles.infoNoticeText,{fontWeight:'800'}]}>{t('account.verificationPending')}</Text><Text style={styles.infoNoticeText}>{t('account.verificationPendingBody')}</Text></View>
         </View>
       )}
@@ -773,7 +788,7 @@ function PaymentChannelButton({ channel, selected, onSelect }) {
         <Text style={styles.paymentTitle}>{info.label}</Text>
         <Text style={styles.mutedSmall}>{info.info}</Text>
       </View>
-      {selected ? <Ionicons name="checkmark-circle" size={22} color={C.darkGreen} /> : <Ionicons name="chevron-forward" size={18} color={C.muted} />}
+      {selected ? <Ionicons name="checkmark-circle" size={22} color={C.deep} /> : <Ionicons name="chevron-forward" size={18} color={C.muted} />}
     </TouchableOpacity>
   );
 }
@@ -794,7 +809,7 @@ function MenuModal({ visible, close, go, driver, user }) {
     <Modal visible={visible} transparent animationType="fade" onRequestClose={close}>
       <TouchableOpacity style={styles.menuBackdrop} activeOpacity={1} onPress={close}>
         <View style={styles.menuPanel}>
-          <Text style={styles.logoMenu}>VOOM</Text>
+          <BekloLogo size={40}/>
           <View style={styles.menuProfile}><View style={styles.menuAvatar}><Ionicons name="person" size={26} /></View><View><Text style={styles.rideName}>{user.name}</Text><Text style={styles.mutedSmall}>{user.role==='DRIVER'?t('account.driverAccount'):t('account.riderAccount')}</Text></View></View>
           <MenuItem icon="time" label={t('nav.activity')} onPress={() => go('activity')} />
           <MenuItem icon="wallet" label={t('nav.wallet')} onPress={() => go('wallet')} />
@@ -830,7 +845,7 @@ function MarketModal({ visible, marketId, setMarketId, close }) {
             <TouchableOpacity key={m.id} style={[styles.marketRow, marketId === m.id && styles.marketSelected]} onPress={() => { setMarketId(m.id); close(); }}>
               <View style={styles.flagBox}><Text style={styles.flagText}>{m.id === 'et' ? 'ET' : 'UG'}</Text></View>
               <View style={{ flex: 1 }}><Text style={styles.rideName}>{m.city}</Text><Text style={styles.mutedSmall}>{m.country} • {m.currency}</Text></View>
-              {marketId === m.id && <Ionicons name="checkmark-circle" size={23} color={C.darkGreen} />}
+              {marketId === m.id && <Ionicons name="checkmark-circle" size={23} color={C.deep} />}
             </TouchableOpacity>
           ))}
         </View>
@@ -856,8 +871,8 @@ function PaymentModal({ visible, channels, value, onChoose, close }) {
 
 const styles = StyleSheet.create({
   googleAttribution:{fontSize:12,fontWeight:'400',letterSpacing:0,color:'#5E5E5E',marginTop:6,textTransform:'none'},
-  infoNotice:{flexDirection:'row',alignItems:'center',gap:7,padding:10,borderRadius:12,backgroundColor:'#F0F6E8',marginVertical:8},
-  infoNoticeText:{flex:1,fontSize:12,color:C.darkGreen,lineHeight:17},
+  infoNotice:{flexDirection:'row',alignItems:'center',gap:7,padding:10,borderRadius:12,backgroundColor:C.infoSoft,marginVertical:8},
+  infoNoticeText:{flex:1,fontSize:12,color:C.deep,lineHeight:17},
   centerAll:{alignItems:'center',justifyContent:'center'},
   locationAction:{flexDirection:'row',gap:10,alignItems:'center',paddingVertical:13},
   errorText:{color:'#9A3412',fontSize:13,lineHeight:18,marginVertical:8},
@@ -870,7 +885,7 @@ const styles = StyleSheet.create({
   cityPill: { height: 44, paddingHorizontal: 14, gap: 6, borderRadius: 22, backgroundColor: C.paper, alignItems: 'center', flexDirection: 'row', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 4 },
   cityPillText: { fontWeight: '800', fontSize: 14 },
   logoFloat: { position: 'absolute', top: Platform.OS === 'android' ? 105 : 76, left: 18, backgroundColor: C.ink, paddingHorizontal: 11, paddingVertical: 6, borderRadius: 9 },
-  logo: { color: C.voom, fontSize: 20, fontWeight: '900', letterSpacing: -1.2 },
+  
   homeSheet: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 11, paddingBottom: 21, backgroundColor: C.paper, borderTopLeftRadius: 26, borderTopRightRadius: 26 },
   dragHandle: { width: 44, height: 5, borderRadius: 3, backgroundColor: '#D7D9D4', alignSelf: 'center', marginBottom: 14 },
   heroTitle: { fontSize: 29, fontWeight: '900', letterSpacing: -1.2, marginBottom: 14, color: C.ink },
@@ -901,16 +916,16 @@ const styles = StyleSheet.create({
   destinationRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 9, borderBottomWidth: 1, borderBottomColor: C.line },
   placeIcon: { width: 42, height: 42, borderRadius: 12, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   destinationTitle: { fontSize: 16, fontWeight: '800', color: C.ink },
-  button: { marginTop: 14, backgroundColor: C.ink, borderRadius: 14, minHeight: 54, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' },
+  button: { marginTop: 14, backgroundColor: C.brand, borderRadius: 14, minHeight: 54, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' },
   buttonSecondary: { backgroundColor: C.paper, borderWidth: 1.5, borderColor: C.line },
-  buttonText: { textAlign: "center", color: C.paper, fontSize: 16, fontWeight: '900' },
+  buttonText: { textAlign: "center", color: C.ink, fontSize: 16, fontWeight: '900' },
   buttonSecondaryText: { color: C.ink },
   mapBack: { position: 'absolute', top: Platform.OS === 'android' ? 48 : 18, left: 16 },
   pickupAddress: { flexDirection: 'row', alignItems: 'center', marginTop: 15, paddingVertical: 8 },
   optionsSheet: { flex: 1, paddingHorizontal: 18, paddingTop: 11, paddingBottom: 18, backgroundColor: C.paper, borderTopLeftRadius: 26, borderTopRightRadius: 26, marginTop: -20 },
   sheetTitle: { fontSize: 24, fontWeight: '900', color: C.ink, letterSpacing: -0.6 },
   rideRow: { flexDirection: 'row', alignItems: 'center', padding: 10, borderRadius: 16, marginTop: 8, borderWidth: 1.5, borderColor: 'transparent' },
-  rideSelected: { backgroundColor: '#F8FFE9', borderColor: C.ink },
+  rideSelected: { backgroundColor: C.brandSoft, borderColor: C.ink },
   rideIcon: { width: 56, height: 56, borderRadius: 15, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   rideName: { fontSize: 16, fontWeight: '900', color: C.ink },
   muted: { color: C.muted, marginTop: 4, lineHeight: 19 },
@@ -936,19 +951,19 @@ const styles = StyleSheet.create({
   menuPanel: { width: '82%', height: '100%', backgroundColor: C.paper, paddingTop: 64, paddingHorizontal: 20 },
   logoMenu: { fontSize: 30, fontWeight: '900', letterSpacing: -1.8, color: C.ink },
   menuProfile: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: C.line },
-  menuAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: C.voom, alignItems: 'center', justifyContent: 'center' },
+  menuAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   menuItem: { height: 57, flexDirection: 'row', alignItems: 'center', gap: 13, borderBottomWidth: 1, borderBottomColor: C.line },
   menuLabel: { flex: 1, fontWeight: '800', fontSize: 15 },
   menuFooter: { marginTop: 'auto', paddingBottom: 30 },
   marketRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 14, marginTop: 9, borderWidth: 1.5, borderColor: C.line },
-  marketSelected: { borderColor: C.ink, backgroundColor: '#F8FFE9' },
+  marketSelected: { borderColor: C.ink, backgroundColor: C.brandSoft },
   flagBox: { width: 42, height: 42, borderRadius: 12, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', marginRight: 11 },
-  flagText: { color: C.voom, fontWeight: '900' },
+  flagText: { color: C.brand, fontWeight: '900' },
   activityCard: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: C.line },
   activityIcon: { width: 46, height: 46, borderRadius: 14, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   paymentItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line },
   profileCard: { flexDirection: 'row', gap: 13, alignItems: 'center', paddingVertical: 16 },
-  profileAvatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.voom, alignItems: 'center', justifyContent: 'center' },
+  profileAvatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   accountRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.line },
   accountIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   driverHeader: { height: 66, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, backgroundColor: C.paper },

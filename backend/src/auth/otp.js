@@ -33,7 +33,7 @@ async function requestOtp(phoneInput) {
   await prisma.otpCode.create({
     data: { phone, codeHash: hashCode(code, phone), expiresAt: new Date(Date.now() + CODE_TTL_MS) },
   });
-  await sendSms(phone, `Your VOOM verification code is ${code}. It expires in 5 minutes.`);
+  await sendSms(phone, `Your Beklo verification code is ${code}. It expires in 5 minutes.`);
   return { phone };
 }
 

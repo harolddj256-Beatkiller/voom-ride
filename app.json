@@ -1,37 +1,54 @@
 {
   "expo": {
-    "name": "VOOM",
-    "slug": "voom-ride",
-    "version": "2.0.0",
+    "name": "Beklo",
+    "slug": "beklo",
+    "version": "2.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "scheme": "voom",
+    "scheme": "beklo",
     "plugins": [
       "expo-asset",
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#0B2A5B"
+        }
+      ],
+      [
         "expo-image-picker",
         {
-          "cameraPermission": "VOOM uses your camera during driver sign-up to verify your identity with a selfie and a photo of your ID."
+          "cameraPermission": "Beklo uses your camera during driver sign-up to verify your identity with a selfie and a photo of your ID."
         }
       ]
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.voom.ride",
+      "bundleIdentifier": "com.beklo.ride",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "VOOM uses your location when you tap Use GPS to set your pickup point."
-      }
+        "NSLocationWhenInUseUsageDescription": "Beklo uses your location when you tap Use GPS to set your pickup point.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "buildNumber": "1"
     },
     "android": {
-      "package": "com.voom.ride",
+      "package": "com.beklo.ride",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "CAMERA"
       ],
       "adaptiveIcon": {
-        "backgroundColor": "#111111"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B2A5B"
       }
-    }
+    },
+    "icon": "./assets/icon.png",
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "primaryColor": "#0B2A5B"
   }
 }

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, setAuthToken } from './api';
 
-const STORAGE_KEY = 'voom.session.v1';
+const STORAGE_KEY = 'voom.session.v1'; // kept so existing logins survive the Beklo rename
 const SessionContext = createContext(null);
 
 export function SessionProvider({ children }) {
@@ -55,8 +55,28 @@ export function SessionProvider({ children }) {
 
   const logout = useCallback(() => persist(null, null), [persist]);
 
+  // Ask the server for the latest account details (e.g. a driver who has just
+  // been approved by an admin). Keeps the current login if the network is down.
+  const refreshUser = useCallback(async () => {
+    if (!token) return null;
+    try {
+      const { user: fresh } = await api.me();
+      await persist(token, fresh);
+      return fresh;
+    } catch (e) {
+      if (e?.status === 401) await persist(null, null);
+      return null;
+    }
+  }, [token, persist]);
+
+  useEffect(() => {
+    if (!restoring && token) refreshUser();
+    // Only once, right after the saved login is loaded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restoring]);
+
   return (
-    <SessionContext.Provider value={{ user, token, restoring, register, login, sendOtp, verifyOtp, logout }}>
+    <SessionContext.Provider value={{ user, token, restoring, register, login, sendOtp, verifyOtp, logout, refreshUser }}>
       {children}
     </SessionContext.Provider>
   );

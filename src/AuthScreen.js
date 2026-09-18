@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { C } from './theme';
+import BekloLogo from './BekloLogo';
 import { useSession } from './session';
 import { useI18n } from './i18n';
 import { captureIdentityPhoto } from './photoCapture';
@@ -57,8 +58,8 @@ function PhotoField({ label, photo, takeLabel, retakeLabel, onCapture, disabled 
 }
 
 // Signup always collects both a verified phone (via OTP) and an email + password,
-// so every VOOM account can be reached both ways. Drivers additionally submit a
-// Fayda ID number and two photos so VOOM can review and verify them remotely.
+// so every Beklo account can be reached both ways. Drivers additionally submit a
+// Fayda ID number and two photos so Beklo can review and verify them remotely.
 function SignupForm({ role, vehicleModel, setVehicleModel, vehiclePlate, setVehiclePlate }) {
   const { t } = useI18n();
   const { register, sendOtp } = useSession();
@@ -249,7 +250,7 @@ export default function AuthScreen() {
       <StatusBar style="dark" />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <Text style={styles.logo}>VOOM</Text>
+          <BekloLogo size={44} style={{ marginBottom: 6 }} />
           <Text style={styles.title}>{mode === 'signup' ? t('auth.createAccount') : t('auth.welcomeBack')}</Text>
           {mode === 'signup' && <RoleToggle role={role} setRole={setRole} />}
           {mode === 'signup' ? (
@@ -286,10 +287,10 @@ const styles = StyleSheet.create({
   rolePill: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: C.soft, alignItems: 'center' },
   rolePillActive: { backgroundColor: C.ink },
   roleText: { fontWeight: '800', color: C.ink },
-  roleTextActive: { color: C.voom },
+  roleTextActive: { color: C.paper },
   methodRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   methodPill: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, borderColor: C.line, alignItems: 'center' },
-  methodPillActive: { borderColor: C.ink, backgroundColor: '#F8FFE9' },
+  methodPillActive: { borderColor: C.ink, backgroundColor: C.brandSoft },
   methodText: { fontWeight: '700', color: C.muted },
   methodTextActive: { color: C.ink },
   photoButton: { flexDirection: 'row', alignItems: 'center', gap: 12, height: 56, borderRadius: 12, backgroundColor: C.soft, paddingHorizontal: 10 },
@@ -300,9 +301,9 @@ const styles = StyleSheet.create({
   label: { fontSize: 12, fontWeight: '800', color: C.muted, marginBottom: 6 },
   input: { height: 50, borderRadius: 12, backgroundColor: C.soft, paddingHorizontal: 14, fontSize: 15, fontWeight: '600', color: C.ink },
   hint: { fontSize: 12, color: C.muted, marginBottom: 12, lineHeight: 17 },
-  button: { marginTop: 8, backgroundColor: C.ink, borderRadius: 14, minHeight: 52, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  button: { marginTop: 8, backgroundColor: C.brand, borderRadius: 14, minHeight: 52, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
   buttonSecondary: { backgroundColor: C.paper, borderWidth: 1.5, borderColor: C.line },
-  buttonText: { color: C.paper, fontSize: 16, fontWeight: '900' },
+  buttonText: { color: C.ink, fontSize: 16, fontWeight: '900' },
   buttonTextSecondary: { color: C.ink },
-  link: { color: C.darkGreen, fontWeight: '800', textAlign: 'center' },
+  link: { color: C.ink, fontWeight: '800', textAlign: 'center' },
 });

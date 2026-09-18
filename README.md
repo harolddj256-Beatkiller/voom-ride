@@ -1,6 +1,6 @@
-# VOOM v2.0
+# Beklo v2.1 (formerly VOOM)
 
-VOOM is a ride-hailing app for Ethiopia (Addis Ababa) and Uganda (Kampala), built
+Beklo is a ride-hailing app for Ethiopia (Addis Ababa) and Uganda (Kampala), built
 with Expo/React Native and a real backend (see `backend/`).
 
 ## What's real

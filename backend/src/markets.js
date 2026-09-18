@@ -12,9 +12,9 @@ const MARKETS = {
     serviceRadiusKm: 55,
     paymentMethods: ['CHAPA', 'CASH'],
     rideTypes: [
-      { id: 'mini', name: 'Voom Mini', seats: 4, baseFare: 90, perKm: 38, minFare: 180 },
-      { id: 'comfort', name: 'Voom Comfort', seats: 4, baseFare: 120, perKm: 50, minFare: 260 },
-      { id: 'xl', name: 'Voom XL', seats: 6, baseFare: 170, perKm: 68, minFare: 350 },
+      { id: 'mini', name: 'Beklo Mini', seats: 4, baseFare: 90, perKm: 38, minFare: 180 },
+      { id: 'comfort', name: 'Beklo Comfort', seats: 4, baseFare: 120, perKm: 50, minFare: 260 },
+      { id: 'xl', name: 'Beklo XL', seats: 6, baseFare: 170, perKm: 68, minFare: 350 },
     ],
   },
   ug: {
@@ -26,10 +26,10 @@ const MARKETS = {
     serviceRadiusKm: 55,
     paymentMethods: ['CHAPA', 'CASH'],
     rideTypes: [
-      { id: 'boda', name: 'Voom Boda', seats: 1, baseFare: 1500, perKm: 900, minFare: 3000 },
-      { id: 'mini', name: 'Voom Mini', seats: 4, baseFare: 3000, perKm: 2200, minFare: 7000 },
-      { id: 'comfort', name: 'Voom Comfort', seats: 4, baseFare: 4500, perKm: 3000, minFare: 10000 },
-      { id: 'xl', name: 'Voom XL', seats: 6, baseFare: 6000, perKm: 4200, minFare: 16000 },
+      { id: 'boda', name: 'Beklo Boda', seats: 1, baseFare: 1500, perKm: 900, minFare: 3000 },
+      { id: 'mini', name: 'Beklo Mini', seats: 4, baseFare: 3000, perKm: 2200, minFare: 7000 },
+      { id: 'comfort', name: 'Beklo Comfort', seats: 4, baseFare: 4500, perKm: 3000, minFare: 10000 },
+      { id: 'xl', name: 'Beklo XL', seats: 6, baseFare: 6000, perKm: 4200, minFare: 16000 },
     ],
   },
 };

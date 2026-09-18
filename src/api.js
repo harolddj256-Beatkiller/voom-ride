@@ -3,7 +3,9 @@
 // EXPO_PUBLIC_VOOM_API_URL (e.g. in a .env file read by Expo) before
 // shipping — without it, no backend calls can succeed and the app shows a
 // clear setup error instead of silently pretending to work.
-export const API_BASE_URL = (process.env.EXPO_PUBLIC_VOOM_API_URL || '').trim().replace(/\/+$/, '');
+// Harold's live backend is built in, so nobody has to type it. A .env value still wins.
+export const DEFAULT_API_URL = 'https://voom-backend-kappa.vercel.app';
+export const API_BASE_URL = (process.env.EXPO_PUBLIC_VOOM_API_URL || DEFAULT_API_URL).trim().replace(/\/+$/, '');
 
 export class ApiError extends Error {
   constructor(status, message) {
@@ -17,7 +19,7 @@ export function setAuthToken(token) { authToken = token; }
 
 async function request(path, { method = 'GET', body, signal } = {}) {
   if (!API_BASE_URL) {
-    throw new ApiError(0, 'VOOM backend URL is not configured. Set EXPO_PUBLIC_VOOM_API_URL.');
+    throw new ApiError(0, 'Beklo backend URL is not configured. Set EXPO_PUBLIC_VOOM_API_URL.');
   }
   const headers = { 'Content-Type': 'application/json' };
   if (authToken) headers.Authorization = `Bearer ${authToken}`;
@@ -30,7 +32,7 @@ async function request(path, { method = 'GET', body, signal } = {}) {
       signal,
     });
   } catch (e) {
-    throw new ApiError(0, 'Could not reach the VOOM server. Check your connection and try again.');
+    throw new ApiError(0, 'Could not reach the Beklo server. Check your connection and try again.');
   }
   let data = null;
   try { data = await response.json(); } catch { /* empty body */ }

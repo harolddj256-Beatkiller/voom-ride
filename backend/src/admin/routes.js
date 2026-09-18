@@ -60,7 +60,7 @@ router.get('/', (req, res) => {
 // the whole point being no one has to come into an office to do it.
 const ADMIN_PAGE = `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VOOM driver verification</title>
+<title>Beklo driver verification</title>
 <style>
   body{font-family:-apple-system,system-ui,sans-serif;background:#F7F8F4;margin:0;padding:24px;color:#14150F;}
   h1{font-size:20px;margin:0 0 16px;}
@@ -81,7 +81,7 @@ const ADMIN_PAGE = `<!doctype html>
 </style></head>
 <body>
   <div id="login">
-    <h1>VOOM admin</h1>
+    <h1>Beklo admin</h1>
     <input id="email" placeholder="Admin email" autocapitalize="none">
     <input id="password" placeholder="Password" type="password">
     <button class="primary" onclick="login()">Sign in</button>

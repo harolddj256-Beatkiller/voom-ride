@@ -35,11 +35,11 @@ export default function VoomMap({ market, pickup, destination, routeInfo, onChoo
         flipY={false}
       />}
       <Marker coordinate={coordinates(pickup)} title={pointTitle} description={pickup.label || pointLabel(pickup)}
-        pinColor="#111111" draggable={!!onChoose}
+        pinColor="#0B2A5B" draggable={!!onChoose}
         onDragEnd={onChoose ? e => onChoose(e.nativeEvent.coordinate) : undefined} />
-      {!!destination && <Marker coordinate={coordinates(destination)} title="Destination" description={destination.label} pinColor="#198754" />}
+      {!!destination && <Marker coordinate={coordinates(destination)} title="Destination" description={destination.label} pinColor="#FF7A1A" />}
       {routeInfo?.source==='google' && routeInfo.coordinates.length>1 &&
-        <Polyline coordinates={routeInfo.coordinates} strokeWidth={5} strokeColor="#173300" />}
+        <Polyline coordinates={routeInfo.coordinates} strokeWidth={5} strokeColor="#FF7A1A" />}
       {children}
     </MapView>
     <TouchableOpacity accessibilityLabel="Recenter map on selected pins" style={[s.fit,{top:controlTop}]} onPress={fit}>

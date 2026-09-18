@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
   pin: { position: 'absolute', width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#fff' },
   pickup: { left: '47%', top: '43%', backgroundColor: '#111' },
   destination: { left: '70%', top: '28%', backgroundColor: '#198754' },
-  pinText: { color: '#b7f548', fontSize: 22, lineHeight: 22 },
+  pinText: { color: '#FF7A1A', fontSize: 22, lineHeight: 22 },
   destinationText: { color: '#fff', fontSize: 22, lineHeight: 22 },
   caption: { position: 'absolute', left: 14, right: 14, bottom: 14, backgroundColor: 'rgba(255,255,255,0.94)', borderRadius: 12, padding: 10 },
   captionTitle: { color: '#111', fontSize: 12, fontWeight: '700' },

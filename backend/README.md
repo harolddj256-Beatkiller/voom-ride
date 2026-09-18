@@ -45,7 +45,7 @@ This repo is set up for Vercel: `api/index.js` exports the Express app, and
 with **Root Directory** set to `backend/`, then set the environment variables from
 `.env.example` (`DATABASE_URL`, `JWT_SECRET`, `CHAPA_SECRET_KEY`, and optionally
 `PUBLIC_BASE_URL`, `TWILIO_*`). After the first deploy, run
-`npm run prisma:migrate deploy` against the production `DATABASE_URL` (or run it
+`npm run prisma:migrate` against the production `DATABASE_URL` (or run it
 from CI) to create the schema.
 
 Point the mobile app at the deployed URL by setting `EXPO_PUBLIC_VOOM_API_URL` in

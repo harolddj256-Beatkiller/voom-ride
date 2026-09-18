@@ -28,17 +28,17 @@ router.post('/chapa/initialize', authenticate(), async (req, res, next) => {
     const payment = await prisma.payment.create({
       data: { tripId: trip.id, provider: 'CHAPA', txRef, amount: trip.fareAmount, currency: trip.currency, status: 'PENDING' },
     });
-    const [firstName, ...rest] = (req.user.name || 'VOOM Rider').split(' ');
+    const [firstName, ...rest] = (req.user.name || 'Beklo Rider').split(' ');
     const { checkoutUrl } = await initializeTransaction({
       amount: trip.fareAmount,
       currency: trip.currency,
       email: req.user.email || `${req.user.id}@voom.invalid`,
-      firstName: firstName || 'VOOM',
+      firstName: firstName || 'Beklo',
       lastName: rest.join(' ') || 'Rider',
       txRef,
       callbackUrl: `${baseUrl(req)}/payments/chapa/webhook`,
       returnUrl: `${baseUrl(req)}/payments/chapa/return?tx_ref=${encodeURIComponent(txRef)}`,
-      title: 'VOOM ride',
+      title: 'Beklo ride',
       description: `${trip.pickupLabel} to ${trip.destLabel}`,
     });
     res.status(201).json({ paymentId: payment.id, txRef, checkoutUrl });

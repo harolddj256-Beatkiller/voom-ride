@@ -19,9 +19,9 @@ const MARKETS = {
       { id: 'CBE', label: 'CBE Birr', icon: 'business-outline', backend: 'CHAPA', info: "Opens Chapa's secure checkout, where you pay with your CBE account or CBE Birr." },
     ],
     rideTypes: [
-      { id: 'mini', name: 'Voom Mini', eta: 3, seats: 4, baseFare: 90, perKm: 38, minFare: 180, icon: 'car-sport', note: 'Affordable everyday rides' },
-      { id: 'comfort', name: 'Voom Comfort', eta: 5, seats: 4, baseFare: 120, perKm: 50, minFare: 260, icon: 'car', note: 'Newer cars • extra comfort' },
-      { id: 'xl', name: 'Voom XL', eta: 7, seats: 6, baseFare: 170, perKm: 68, minFare: 350, icon: 'bus', note: 'More seats and luggage space' },
+      { id: 'mini', name: 'Beklo Mini', eta: 3, seats: 4, baseFare: 90, perKm: 38, minFare: 180, icon: 'car-sport', note: 'Affordable everyday rides' },
+      { id: 'comfort', name: 'Beklo Comfort', eta: 5, seats: 4, baseFare: 120, perKm: 50, minFare: 260, icon: 'car', note: 'Newer cars • extra comfort' },
+      { id: 'xl', name: 'Beklo XL', eta: 7, seats: 6, baseFare: 170, perKm: 68, minFare: 350, icon: 'bus', note: 'More seats and luggage space' },
     ],
   },
   ug: {
@@ -43,10 +43,10 @@ const MARKETS = {
       { id: 'AIRTEL_MONEY', label: 'Airtel Money', icon: 'phone-portrait-outline', backend: 'CHAPA', info: "Opens Chapa's secure checkout, where you pay with Airtel Money." },
     ],
     rideTypes: [
-      { id: 'boda', name: 'Voom Boda', eta: 2, seats: 1, baseFare: 1500, perKm: 900, minFare: 3000, icon: 'bicycle', note: 'Fastest through traffic' },
-      { id: 'mini', name: 'Voom Mini', eta: 3, seats: 4, baseFare: 3000, perKm: 2200, minFare: 7000, icon: 'car-sport', note: 'Affordable everyday rides' },
-      { id: 'comfort', name: 'Voom Comfort', eta: 5, seats: 4, baseFare: 4500, perKm: 3000, minFare: 10000, icon: 'car', note: 'Newer cars • extra comfort' },
-      { id: 'xl', name: 'Voom XL', eta: 7, seats: 6, baseFare: 6000, perKm: 4200, minFare: 16000, icon: 'bus', note: 'More seats and luggage space' },
+      { id: 'boda', name: 'Beklo Boda', eta: 2, seats: 1, baseFare: 1500, perKm: 900, minFare: 3000, icon: 'bicycle', note: 'Fastest through traffic' },
+      { id: 'mini', name: 'Beklo Mini', eta: 3, seats: 4, baseFare: 3000, perKm: 2200, minFare: 7000, icon: 'car-sport', note: 'Affordable everyday rides' },
+      { id: 'comfort', name: 'Beklo Comfort', eta: 5, seats: 4, baseFare: 4500, perKm: 3000, minFare: 10000, icon: 'car', note: 'Newer cars • extra comfort' },
+      { id: 'xl', name: 'Beklo XL', eta: 7, seats: 6, baseFare: 6000, perKm: 4200, minFare: 16000, icon: 'bus', note: 'More seats and luggage space' },
     ],
   },
 };

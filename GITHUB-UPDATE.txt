@@ -1,0 +1,26 @@
+PUT BEKLO v2.1 ON GITHUB — the easy way (no typing code)
+========================================================
+
+Why: Vercel may be connected to your GitHub repo. If GitHub keeps the OLD
+code, the next time something is pushed there, Vercel could put the old
+backend back online (without the driver safety fix). So GitHub should
+always have your newest version.
+
+1. Install GitHub Desktop (free): https://desktop.github.com
+   Sign in with your harolddj256-Beatkiller account.
+
+2. File > Clone repository > pick "voom-ride" > Clone.
+   This makes a voom-ride folder on your Mac (usually in Documents/GitHub).
+
+3. Open that voom-ride folder in Finder.
+   Delete everything inside it EXCEPT the hidden .git folder
+   (you won't see .git, that's fine, just select all visible files and delete).
+
+4. Copy everything from this Beklo folder into the voom-ride folder.
+   (Skip node_modules if it's there — it's big and not needed.)
+
+5. Back in GitHub Desktop: in the Summary box type
+      Beklo v2.1 - new look, driver safety, admin
+   Click "Commit to main", then click "Push origin".
+
+Done. Your secret keys stay safe: .env files are never uploaded.

@@ -4,7 +4,7 @@ const { prisma } = require('../db');
 
 function receiptNumber() {
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  return `VOOM-${stamp}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+  return `BEKLO-${stamp}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 }
 
 // Creates (or returns the existing) Payment + Receipt for a completed trip.
