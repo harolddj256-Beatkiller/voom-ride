@@ -25,3 +25,14 @@ test('only approved drivers may see or take ride requests', () => {
   assert.ok(driverBlockReason({ role: 'RIDER', verificationStatus: 'NOT_REQUIRED' }));
   assert.ok(driverBlockReason(null));
 });
+
+const { isTestPhone, testOtpCode } = require('../src/policy/testPhones');
+test('test phones only work when a 6-digit test code is set', () => {
+  const env = { TEST_PHONES: '+256770433003, +256700000001', TEST_OTP_CODE: '482915' };
+  assert.equal(testOtpCode(env), '482915');
+  assert.equal(isTestPhone('+256770433003', env), true);
+  assert.equal(isTestPhone('+256700000001', env), true);
+  assert.equal(isTestPhone('+251911223344', env), false);
+  assert.equal(isTestPhone('+256770433003', { TEST_PHONES: '+256770433003', TEST_OTP_CODE: '12' }), false);
+  assert.equal(isTestPhone('+256770433003', { TEST_PHONES: '+256770433003' }), false);
+});

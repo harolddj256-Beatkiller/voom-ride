@@ -3,6 +3,7 @@ const crypto = require('node:crypto');
 const { prisma } = require('../db');
 const { HttpError } = require('../errors');
 const { sendSms } = require('./sms');
+const { isTestPhone, testOtpCode } = require('../policy/testPhones');
 
 const CODE_TTL_MS = 5 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
@@ -29,11 +30,12 @@ async function requestOtp(phoneInput) {
     orderBy: { createdAt: 'desc' },
   });
   if (recent) throw new HttpError(429, 'Wait a minute before requesting another code.');
-  const code = generateCode();
+  const testing = isTestPhone(phone);
+  const code = testing ? testOtpCode() : generateCode();
   await prisma.otpCode.create({
     data: { phone, codeHash: hashCode(code, phone), expiresAt: new Date(Date.now() + CODE_TTL_MS) },
   });
-  await sendSms(phone, `Your Beklo verification code is ${code}. It expires in 5 minutes.`);
+  if (!testing) await sendSms(phone, `Your Beklo verification code is ${code}. It expires in 5 minutes.`);
   return { phone };
 }
 

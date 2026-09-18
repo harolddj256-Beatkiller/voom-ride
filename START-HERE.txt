@@ -14,6 +14,10 @@ STEP 1 - SEND THE NEW BACKEND ONLINE
      link into your browser. Sign in with the account that has voom-backend.
    - When it asks for the admin phone, type the phone you use in the app,
      like +2519XXXXXXXX.
+   - When it asks for TEST PHONES, type the numbers you will test with,
+     for example your number (for the boss account) and a second number
+     (for a test driver). Then pick a secret 6-digit code. In the app,
+     type that code instead of waiting for an SMS. (Testing only.)
    - Wait 1-2 minutes. When you see {"status":"ok"}, the backend is updated.
 
 
